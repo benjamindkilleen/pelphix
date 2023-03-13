@@ -7,6 +7,17 @@ Surgical Phase Recognition from X-ray Images in Percutaneous Pelvic Fixation
 ![Pelphix](images/liverpool_000000000_sequences.gif)
 
 </div>
+
+<div align="center">
+
+<!-- TODO: update links to the arxiv and dataset links. -->
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](
+<https://opensource.org/licenses/Apache-2.0>)
+[![arXiv](https://img.shields.io/badge/arXiv-2109.13900-b31b1b.svg)](
+<https://arxiv.org/abs/2109.13900>)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5555555.svg)](
+<https://doi.org/10.5281/zenodo.5555555>)
+
 <div align="left">
 
 ## Overview
@@ -34,10 +45,6 @@ Then install the conda environment with
 ```bash
 conda env create -f environment.yaml
 ```
-
-### Pip Install
-
-TODO: install from pip.
 
 ## Data
 
