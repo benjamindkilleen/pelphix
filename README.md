@@ -73,7 +73,11 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
 
 ## Details
 
+![simulation](images/simulation_overview.png)
+
 ![architecture](images/architecture.png)
+
+![results](images/liverpool_000000000.png)
 
 ## TODO
 
