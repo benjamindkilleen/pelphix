@@ -1,0 +1,7 @@
+# @package _group_
+
+onedrive: ${onedrive}
+nmdid_dir: ${nmdid_dir}
+n_points: ${n_points}
+pelvis_n_points: ${pelvis_n_points}
+n_components: ${n_components}

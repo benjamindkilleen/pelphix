@@ -1,0 +1,2 @@
+name: instances
+model_config_file: ${instances_config_file} 

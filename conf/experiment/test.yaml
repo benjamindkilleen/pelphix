@@ -1,0 +1,11 @@
+# Testing the transformer
+
+onedrive_dir: ${onedrive_dir}
+skip_download: ${skip_download}
+embeddings_dataset: ${embeddings_liverpool}
+recognition_module: ${recognition_module}
+trainer: ${trainer}
+ckpt: ${ckpt} # transformer ckpt
+dataloader: ${dataloader}
+results_dir: ${results_dir}
+liverpool: ${liverpool}

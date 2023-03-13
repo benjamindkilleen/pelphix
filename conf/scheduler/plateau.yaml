@@ -1,0 +1,9 @@
+name: ReduceLROnPlateau
+config:
+  min_lr: 0.000001
+  mode: max
+  cooldown: 100
+  verbose: True
+  threshold_mode: rel
+  patience: 50
+  factor: 0.1

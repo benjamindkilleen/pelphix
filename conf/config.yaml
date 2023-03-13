@@ -1,0 +1,320 @@
+hydra:
+  run:
+    dir: ./results/${hydra.runtime.choices.experiment}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  sweep:
+    dir: ./results/${hydra.runtime.choices.experiment}/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}_${hydra.job.override_dirname}
+  verbose:
+    - pelvic_workflow_detection
+    # - deepdrr
+
+defaults:
+  - _self_ # makes it so the subconfigs override the primary
+  - experiment: train
+  - task: instances
+  - scheduler: plateau
+
+  # Use the configured logging.
+  - override hydra/job_logging: rich
+
+# Universal variables across experiments
+experiment:
+  seed: 1234
+  onedrive_dir: ${onedrive_dir}
+  nmdid_dir: ${nmdid_dir}
+  skip_download: ${skip_download}
+
+onedrive_dir: ~/datasets/OneDrive
+nmdid_dir: sambhav/NMDID-ARCADE
+skip_download: True
+num_workers: 0
+num_procedures: 10000
+
+# SSM parameters
+n_points: 5000
+pelvis_n_points: 10000
+n_components: 40
+
+# Generating the Pelvic Workflows dataset.
+pelvic_workflows:
+  root: ${onedrive_dir}/datasets/PelvicWorkflows
+  nmdid_root: ${onedrive_dir}/${nmdid_dir}
+  pelvis_annotations_dir: ${hydra:runtime.cwd}/data/pelvis_annotations
+  num_val: 10
+  scan_name: THIN_BONE_TORSO
+  image_size:
+    - ${image_size}
+    - ${image_size}
+  corridor_radii:
+    s1_left: 5
+    s1_right: 5
+    s1: 5
+    s2: 5
+    ramus_left: 5
+    ramus_right: 5
+    teardrop_left: 8
+    teardrop_right: 8
+
+  num_procedures: ${num_procedures}
+  overwrite: ${overwrite}
+  cache_dir: ${hydra:runtime.cwd}/cache/pelvic_workflows
+  view_tolerance:
+    # in degrees.
+    ap: 5
+    lateral: 10
+    inlet: 5
+    outlet: 10
+    oblique_left: 5
+    oblique_right: 5
+    teardrop_left: 3
+    teardrop_right: 3
+  num_workers: ${num_workers}
+
+# Other experimental variables
+overwrite: False
+
+gpus: 1
+# checkpoint: null
+# download: True
+# augment: True
+eval_only: False
+image_size: 384
+onedrive:
+  syncdir: ${onedrive_dir}
+
+projector:
+  step: 0.05
+  spectrum: "90KV_AL40"
+  photon_count: 100000
+  scatter_num: 0
+  threads: 8
+  neglog: True
+  intensity_upper_bound: 10
+  attenuate_outside_volume: True
+
+
+# Set to the output dir for a previous run to continue.
+output_dir: output
+batch_size: 2
+base_lr: 0.00025
+max_iter: 500000
+dist_port: 10001
+
+
+# TODO: DICE loss not working. Try again later.
+# roi_head_loss: "_dice"
+roi_head_loss: "_ce"
+
+instances_config_file: ${hydra:runtime.cwd}/configs/instance/mask_rcnn_X_101_32x8d_FPN_3x${roi_head_loss}.yaml
+keypoints_config_file: ${hydra:runtime.cwd}/configs/keypoint/keypoint_rcnn_X_101_32x8d_FPN_3x.yaml
+pelvic_workflows_config_file: ${hydra:runtime.cwd}/configs/pelvic_workflows.yaml
+
+# For pre-training on the mask instances.
+train:
+  # config_file: ${model_zoo:COCO-InstanceSegmentation/mask_rcnn_regnety_4gf_dds_fpn_1x.py} # path to the model config file, in `configs/`
+  config_file: ${task.model_config_file} # path to the model config file, in `configs/`
+  resume: True
+  eval_only: ${eval_only}
+  num_gpus: ${gpus}
+  num_machines: 1
+  machine_rank: 0
+  dist_url: "tcp://127.0.0.1:${dist_port}"
+  annotations_dir: ${pelvic_workflows.root}/annotations
+  opts:
+    - DATALOADER.NUM_WORKERS
+    - 4
+    # Comment out to train from scratch (recommended).
+    # - MODEL.WEIGHTS
+    # - ${checkpoint:${task.model_config_file}} # gets overridden in transformer training
+    - SOLVER.IMS_PER_BATCH
+    - ${batch_size}
+    - SOLVER.BASE_LR
+    - ${base_lr}
+    - SOLVER.MAX_ITER
+    - ${max_iter}
+    - SOLVER.STEPS
+    - "(50000, 100000)" # iteration number to decrease learning rate by GAMMA.
+    - MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE
+    - "512"
+    - MODEL.ROI_HEADS.NUM_CLASSES
+    - "18"
+    - MODEL.ROI_HEADS.SCORE_THRESH_TEST
+    - "0.5"
+    - MODEL.ROI_KEYPOINT_HEAD.NUM_KEYPOINTS
+    - "16"
+    - OUTPUT_DIR
+    - ${output_dir}
+    - TEST.KEYPOINT_OKS_SIGMAS
+    - "(0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5)"
+
+
+### For training the transformer. ###
+
+seq_len: 300
+data_num_workers: 4
+input_images: False
+
+# Set on command line
+# instance_checkpoint: ${hydra:runtime.cwd}/results/train/2023-02-25_23-54-25_groot_instances/output/model_0154999.pth
+instance_checkpoint: ${hydra:runtime.cwd}/results/train/2023-02-28_00-55-40_rocket_instances/output/model_0254999.pth
+keypoint_checkpoint: null
+
+dataloader:
+  batch_size: ${batch_size}
+  num_workers: ${data_num_workers}
+  drop_last: False
+
+embeddings_common:
+  # Overwrite the following
+  cache_dir: null 
+  train_datasets: []
+  val_datasets: []
+embeddings_dataset:
+  # Common
+  instance_checkpoint: ${instance_checkpoint}
+  instance_feature_layers: ["p4"] # ["p2", "p3", "p4", "p5", "p6"]
+  instance_setup:
+    opts: ${train.opts}
+    config_file: ${instances_config_file}
+  keypoint_checkpoint: ${keypoint_checkpoint}
+  keypoint_setup:
+    opts: ${train.opts}
+    config_file: ${keypoints_config_file}
+  seq_len: ${seq_len}
+  augment: true # add clipped normal noise to the embeddings, in [-2 std, 2 std]
+  augment_scale: 1.0 # std of the noise
+  input_images: ${input_images}
+
+  # overwrite in other datasets
+  cache_dir: ${pelvic_workflows.root}/embeddings
+  train_datasets:
+    - annotation_path: ${pelvic_workflows.root}/annotations/pelvic_workflows_000400_train.json
+      image_dir: ${pelvic_workflows.root}/pelvic_workflows_000400_train
+  val_datasets:
+    - annotation_path: ${pelvic_workflows.root}/annotations/pelvic_workflows_000400_val.json
+      image_dir: ${pelvic_workflows.root}/pelvic_workflows_000400_val
+  fliph: False
+  val_loader: load
+  train_loader: load
+
+# path to transformer checkpoint, for resuming training or for testing
+ckpt: null 
+
+transformer:
+  d_model: 512
+  nhead: 8
+  dim_feedforward: 2048
+  num_layers: 6
+  dropout: 0.5
+
+optimizer:
+  lr: 0.0001
+  weight_decay: 0.0001
+
+recognition_module:
+  supercategory_num_classes: [8,3,8,2] 
+  supercategories: ["task", "activity", "acquisition", "frame"]
+  transformer: ${transformer}
+  optimizer: ${optimizer}
+  scheduler: ${scheduler}
+  input_images: ${input_images}
+
+trainer:
+  devices: ${gpus}
+  accelerator: gpu
+  strategy: ddp
+  deterministic: True
+  precision: 32 # 16, 32 might be needed because embedded features are large (usually in range (-25, 25)).
+  max_epochs: 10000
+  gradient_clip_val: 5 # 0.5
+  log_every_n_steps: 10
+  # find_unused_parameters: False
+
+### Testing on Cadaver/patient Data ###
+# Path to results directory (e.g. where checkpoint can be found) and results/visualizations will be save.
+# If provided, and ckpt is not provided, will load the latest checkpoint from the results directory.
+results_dir: "." 
+
+liverpool:
+  root_in_onedrive: datasets/2023-02-09_cadaver_liverpool/2023-02-16_percutaneous-fixation_conventional # in onedrive
+  root: ${onedrive_dir}/${liverpool.root_in_onedrive}
+  annotations_dir: ${liverpool.root}/annotations
+  csv_path: ${liverpool.root}/sequences.csv
+  image_dir: ${liverpool.root}/OrthoTrauma (20130116)
+
+_embeddings_liverpool:
+  cache_dir: ${liverpool.root}/embeddings
+  val_datasets:
+    - image_dir: ${liverpool.image_dir}
+      annotations_dir: ${liverpool.annotations_dir}
+      csv_path: ${liverpool.csv_path}
+      name: liverpool
+      use_previous: false
+  val_loader: from_csv
+  fliph: true
+
+embeddings_liverpool: ${merge:${embeddings_dataset},${_embeddings_liverpool}}
+
+# Training the U-Net
+weights_only: False
+unet_seq_len: 48 # 48 and batch size of 2?
+unet_module:
+  supercategories: ["task", "activity", "acquisition", "frame"]
+  supercategory_num_classes: [8,3,8,2]
+  num_seg_classes: 17
+  num_keypoints: 16
+  unet:
+    num_layers: 5
+    features_start: 64
+  transformer: ${transformer}
+  optimizer: ${optimizer}
+  scheduler: ${scheduler}
+
+unet_image_size: 224
+triplets: True
+sequences_train:
+  seq_len: ${unet_seq_len}
+  train: true
+  image_size: ${unet_image_size}
+  triplets: ${triplets}
+  configs:
+    # - loader: load
+    #   config:
+    #     annotation_path: ${pelvic_workflows.root}/annotations/pelvic_workflows_000050_train.json
+    #     image_dir: ${pelvic_workflows.root}/pelvic_workflows_000050_train
+    - loader: load
+      config: 
+        annotation_path: ${pelvic_workflows.root}/annotations/pelvic_workflows_000400_train.json
+        image_dir: ${pelvic_workflows.root}/pelvic_workflows_000400_train
+    - loader: load
+      config:
+        annotation_path: ${pelvic_workflows.root}/annotations/pelvic_workflows_000345_train.json
+        image_dir: ${pelvic_workflows.root}/pelvic_workflows_000345_train
+
+sequences_val:
+  seq_len: ${unet_seq_len}
+  train: false
+  image_size: ${unet_image_size}
+  triplets: ${triplets}
+  configs:
+    - loader: load
+      config:
+        annotation_path: ${pelvic_workflows.root}/annotations/pelvic_workflows_000400_val.json
+        image_dir: ${pelvic_workflows.root}/pelvic_workflows_000400_val
+
+sequences_test:
+  seq_len: ${unet_seq_len} # 300 rather than 100
+  train: false
+  image_size: ${unet_image_size}
+  fliph: true
+  triplets: ${triplets}
+  overlap: 0.7
+  configs:
+    - loader: from_csv
+      config:
+        image_dir: ${liverpool.image_dir}
+        annotations_dir: ${liverpool.annotations_dir}
+        csv_path: ${liverpool.csv_path}
+        name: liverpool
+        use_previous: false
+  
