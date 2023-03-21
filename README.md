@@ -30,7 +30,40 @@ If you find this work useful in your research, please consider citing:
 TODO: add citation
 ```
 
-## Installation
+## Data
+
+TODO: add data download instructions from Zenodo, first to the zip folders of the Pelphix datasets.
+Provide instructions for obtaining the NMDID data, and maybe link to the nmdid-arcade repo for
+processing.
+
+## Running Trained Models
+
+### Install from PyPI
+
+```bash
+pip install pelphix
+```
+
+### Run Trained Models
+
+TODO: add a minimal example of how to run a trained model. Provide weights for the model, uploaded
+to Zenodo.
+
+```Python
+"""Non-functional example."""
+import pelphix
+
+# Load the model.
+model = pelphix.load_model()
+
+# Load the data.
+data = pelphix.load_data()
+
+# Run the model.
+results = model(data)
+```
+
+## Reproducing Experiments
 
 ### Install from Source
 
@@ -46,24 +79,25 @@ Then install the conda environment with
 conda env create -f environment.yaml
 ```
 
-## Data
-
-TODO: add data download instructions, first to the zip folders of the Pelphix datasets. Provide
-instructions for obtaining the NMDID data, and maybe link to the nmdid-arcade repo.
-
-## Usage
-
 Activate the environment.
 
 ```bash
 conda activate pelphix
 ```
 
-Then run experiments with:
+### Run Experiments
+
+Individual experiments can be run by specifying the `experiment` argument to `main.py`. For example,
 
 ```bash
 python main.py experiment={ssm,generate,pretrain,train,test} [options]
 ```
+
+- `ssm` runs the statistical shape model to propagate annotations.
+- `generate` generates simulated datasets for sequences and view-invariant (totally random) sampling.
+- `pretrain` pre-trains the model on view-invariant data.
+- `train` trains the model on simulated sequences.
+- `test` tests the model on simulated sequences and cadaver data.
 
 ### Options
 
@@ -81,13 +115,17 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
 
 ## TODO
 
-<!-- TODO for MICCAI rebuttal -->
+TODO before rebuttal:
+
 - [ ] Add view-invariant pretraining dataset.
   - [ ] Screws and wires in random positions/orientatins in the sphere.
   - [ ] Randomly sample views in 75 degrees around AP, 30 degrees around lateral.
   - [ ] Randomly sample positions in the sphere.
   - [ ] Anatomy segmentations, corridor segmentations, keypoints, wires, screws.
-  - [ ] Classify views as being from a standard view (and which one) or not, based on a head coming off the U-Net bottom.
+  - [ ] (Maybe) classify views as being from a standard view (and which one) or not, based on a head coming off the U-Net bottom.
+  - [ ] Add Keypoints to the tools, just the tip and base.
+  - [ ] Make a squite of more realistic K-wires, with threaded tips.
+  - [ ] Include all the screws.
 - [ ] Fix sequence generation to be more realistic.
   - [ ] Remove `Step` from the Workflow State.
   - [ ] Randomly sample task order. Allow screw insertion to be sampled at any time.
@@ -97,9 +135,17 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
   - [ ] Corridor segmentation should never vary, only the distance along it that wires/screws are inserted.
   - [ ] Wire should always go the full length of the corridor (whatever that is for the given corridor).
   - [ ] "Correct" view might be randomly sampled, but tolerance should be smaller?
-- [ ] Update the model to something more advanced, maybe TransUNet
-  - [ ] Eventually use SwinTransformer
+- [ ] Minor model changes
   - [ ] Pre-training step, with `(black, black, frame)` as input.
   - [ ] 3-frame input should be `(prev-prev, prev, current)`, with black for `prev-prev` if it doesn't exist.
+
+Maybe TODO (but not deal-breakers):
+
+- [ ] Re-build SSM with new meshes and regularization. (Likely not necessary.)
+
+TODO before journal extension:
+
+- [ ] Update the model to something more advanced, maybe TransUNet
+  - [ ] Eventually use SwinTransformer
 
 </div>
