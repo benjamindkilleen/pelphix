@@ -40,6 +40,8 @@ processing.
 
 ### Install from PyPI
 
+TODO: do we even want to do this?
+
 ```bash
 pip install pelphix
 ```
