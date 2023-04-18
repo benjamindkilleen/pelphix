@@ -85,6 +85,10 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
 
 ## TODO
 
+Critica:
+
+- [ ] Just copied the Simulation from the other repo, need to fix bugs from removing the `Step` from the Workflow State.
+
 TODO before rebuttal:
 
 - [ ] Add view-invariant pretraining dataset.
@@ -97,8 +101,8 @@ TODO before rebuttal:
   - [ ] Make a squite of more realistic K-wires, with threaded tips.
   - [ ] Include all the screws.
 - [ ] Fix sequence generation to be more realistic.
-  - [ ] Remove `Step` from the Workflow State.
-  - [ ] Randomly sample task order. Allow screw insertion to be sampled at any time.
+  - [X] Remove `Step` from the Workflow State.
+  - [X] Randomly sample task order. Allow screw insertion to be sampled at any time.
   - [ ] Limit views for each task to ones actually used.
   - [ ] Add missing views.
   - [ ] Make sampling more realistic for views/positions.
