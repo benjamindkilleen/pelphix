@@ -1,0 +1,42 @@
+# TODO remove unused packages
+torch
+torchvision
+pytorch-lightning==1.8.0
+hydra-core
+omegaconf
+numpy
+rich
+scikit-learn
+opencv-python
+stringcase
+h5py
+seaborn
+filterpy
+zmq
+pyransac3d
+totalsegmentator
+autograd
+trimesh
+rtree
+pycpd
+gpustat
+StrEnum
+SciencePlots
+albumentations
+timm
+imgkit
+pycocotools
+./procrustes # qc-procrustes
+open3d
+ml_collections
+
+deepdrr==1.1.2
+-e ../perphix # TODO point to git repo
+
+# development
+pre-commit
+black
+flake8
+pytest
+reorder-python-imports
+toml

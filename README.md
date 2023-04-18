@@ -36,56 +36,24 @@ TODO: add data download instructions from Zenodo, first to the zip folders of th
 Provide instructions for obtaining the NMDID data, and maybe link to the nmdid-arcade repo for
 processing.
 
-## Running Trained Models
+## Installation
 
-### Install from PyPI
-
-TODO: do we even want to do this?
+Clone the repository:
 
 ```bash
-pip install pelphix
-```
-
-### Run Trained Models
-
-TODO: add a minimal example of how to run a trained model. Provide weights for the model, uploaded
-to Zenodo.
-
-```Python
-"""Non-functional example."""
-import pelphix
-
-# Load the model.
-model = pelphix.load_model()
-
-# Load the data.
-data = pelphix.load_data()
-
-# Run the model.
-results = model(data)
-```
-
-## Reproducing Experiments
-
-### Install from Source
-
-```bash
-git clone git@github.com:benjamindkilleen/pelphix.git
+git clone git@github.com:benjamindkilleen/pelvic-workflow-recognition.git
 git submodule init
 git submodule update
 ```
 
-Then install the conda environment with
+Install and activate the conda environment with
 
 ```bash
 conda env create -f environment.yaml
-```
-
-Activate the environment.
-
-```bash
 conda activate pelphix
 ```
+
+## Usage
 
 ### Run Experiments
 

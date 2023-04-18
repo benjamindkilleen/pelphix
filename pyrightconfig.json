@@ -1,0 +1,12 @@
+{
+    "exclude": [
+        "**/__pycache__",
+        "results",
+        "datasets",
+        "cache",
+        "data",
+        "**/data",
+        "conf",
+        "images",
+    ],
+}

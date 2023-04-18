@@ -1,0 +1,15 @@
+name: pelphix
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pytorch
+  - torchvision
+  - pytorch-cuda=11.6
+  - pycuda=2022.2 # 2021.1
+  - pip
+  - pip:
+      - -r requirements.txt
+      - -e .

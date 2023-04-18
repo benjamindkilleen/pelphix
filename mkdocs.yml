@@ -1,0 +1,22 @@
+site_name: Perphix
+site_url: https://example.com/
+nav:
+  - Home: index.md
+  - Data: data.md
+  - Collection: collection.md
+  - Annotation: annotation.md
+  - About: about.md
+
+theme:
+  name: mkdocs
+  features:
+    - content.code.copy
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
