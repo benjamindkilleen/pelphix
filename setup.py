@@ -20,4 +20,5 @@ setup(
         "deepdrr",
     ],
     packages=find_packages(),
+    package_dir={"": "src"},
 )

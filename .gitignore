@@ -127,3 +127,28 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Other
+**.DS_Store
+.vscode
+models/*
+cache
+**.bak
+**.dwl
+**.dwl2
+./datasets/
+images/*/lambda_*/
+images/coco_examples/
+!images/coco_examples/*.gif
+data/annotations/*
+data/pelvis_annotations_*/*
+data/tools
+
+**.zip
+data/MOTS20
+output
+images/eval_example/*.png
+images/augmentations/*.png
+images/keypoint_augmentations/
+images/liverpool_detections/
+images/unet_examples

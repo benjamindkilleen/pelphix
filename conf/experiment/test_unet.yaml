@@ -1,6 +1,0 @@
-sequences_test: ${sequences_test}
-dataloader: ${dataloader}
-unet_module: ${unet_module}
-trainer: ${trainer}
-ckpt: ${ckpt}
-results_dir: ${results_dir}

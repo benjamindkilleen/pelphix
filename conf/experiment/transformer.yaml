@@ -1,6 +1,0 @@
-# Training the transformer
-embeddings_dataset: ${embeddings_dataset}
-recognition_module: ${recognition_module}
-trainer: ${trainer}
-ckpt: ${ckpt}
-dataloader: ${dataloader}

@@ -1,4 +1,7 @@
-# @package _group_
-
-pelvic_workflows: ${pelvic_workflows}
-train: ${train}
+sequences_train: ${sequences_train}
+sequences_val: ${sequences_val}
+dataloader: ${dataloader}
+unet_module: ${unet_module}
+trainer: ${trainer}
+ckpt: ${ckpt}
+weights_only: ${weights_only}

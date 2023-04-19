@@ -29,6 +29,7 @@ pycocotools
 ./procrustes # qc-procrustes
 open3d
 ml_collections
+shapely
 
 deepdrr==1.1.2
 -e ./perphix # TODO point to git repo

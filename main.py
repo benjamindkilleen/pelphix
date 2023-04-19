@@ -55,94 +55,51 @@ log.setLevel(logging.DEBUG)
 
 @pelphix.register_experiment
 def ssm(cfg):
+    """Build the SSM and propagate annotations.
+
+    Not for the faint of heart.
+
+    """
     ssm_build(cfg)
 
 
 @pelphix.register_experiment
+def pregenerate():
+    """Generate a dataset for pretraining."""
+    raise NotImplementedError("TODO: view-invariant pretraining of image features.")
+
+
+@pelphix.register_experiment
+def pretrain():
+    """Pretrain the model on the view-invariant dataset."""
+    pass
+
+
+@pelphix.register_experiment
 def generate(cfg):
+    """Generate the sequence dataset."""
     mp.set_start_method("spawn", force=True)
     # Check that the CTs/annotations are downloaded
     onedrive = OneDrive(cfg.onedrive_dir)
-    onedrive.download(cfg.nmdid_dir, skip=cfg.skip_download)
+    nmdid_dir = Path(cfg.nmdid_dir).expanduser()
+    for d in ["nifti", "TotalSegmentator", "TotalSegmentator_mesh", cfg.pelvis_annotations_dir]:
+        onedrive.download(nmdid_dir / d, skip=cfg.skip_download)
 
     # Generate the images
-    pelvic_workflows = PelvicWorkflowsSimulation(train=True, **cfg.pelvic_workflows)
-    pelvic_workflows.generate()
+    pelphix_sim = PelphixSim(train=True, **cfg.sim)
+    pelphix_sim.generate()
 
-    pelvic_workflows_val = PelvicWorkflowsSimulation(train=False, **cfg.pelvic_workflows)
-    pelvic_workflows_val.generate()
+    pelphix_val = PelphixSim(train=False, **cfg.sim)
+    pelphix_val.generate()
 
 
 @pelphix.register_experiment
 def train(cfg):
-    from pelphix.train_detector import run
+    from pelphix.modules.seq import PelphixModule
 
-    run(cfg.train)
-
-
-@pelphix.register_experiment
-def transformer(cfg):
-    from pelphix.train_transformer import RecognitionModule
-    from pelphix.detector import EmbeddingsDataset
-
-    train_dataset = EmbeddingsDataset(**cfg.embeddings_dataset, train=True)
-    counts = train_dataset.dataset.get_sequence_counts()
-
-    val_dataset = EmbeddingsDataset(**cfg.embeddings_dataset, train=False)
-
-    train_dataloader = DataLoader(train_dataset, shuffle=True, **cfg.dataloader)
-    val_dataloader = DataLoader(val_dataset, **cfg.dataloader)
-
-    module = RecognitionModule(
-        d_input=train_dataset.d_input, sequence_counts=counts, **cfg.recognition_module
-    )
-    trainer = pl.Trainer(**cfg.trainer)
-    trainer.fit(module, train_dataloader, val_dataloader, ckpt_path=cfg.ckpt)
-
-    # TODO: test the model on the cadaver and patient datasets
-
-
-@pelphix.register_experiment
-def test(cfg):
-    # TODO: write out the prediction results. Might need train dataset if only for correct mapping, but should match.
-    # 1. Get the predictions
-    # 2. Map back to phase names using the dataset
-    # 3. Write out the results to the original output dir of the transformer model, based on ckpt
-    # 4. If write_images is true, write out the images with label names on them, to make a GIF
-    from pelphix.train_transformer import RecognitionModule
-    from pelphix.detector import EmbeddingsDataset
-
-    onedrive = OneDrive(cfg.onedrive_dir)
-    onedrive.download(cfg.liverpool.root_in_onedrive, skip=cfg.skip_download)
-
-    if cfg.ckpt is None:
-        cfg.ckpt = os.path.join(
-            cfg.results_dir, "lightning_logs", "version_0", "checkpoints", "last.ckpt"
-        )
-
-    embeddings_dataset = EmbeddingsDataset(**cfg.embeddings_dataset, train=False)
-    # TODO: flip test-set X-ray images horizontally
-
-    embeddings_dataloader = DataLoader(embeddings_dataset, **cfg.dataloader, shuffle=False)
-    module = RecognitionModule.load_from_checkpoint(
-        cfg.ckpt,
-        d_input=embeddings_dataset.d_input,
-        results_dir=cfg.results_dir,
-        test_dataset=embeddings_dataset.dataset,
-        strict=False,
-        **cfg.recognition_module,
-    )
-    trainer = pl.Trainer(**cfg.trainer)
-    trainer.test(module, dataloaders=embeddings_dataloader)
-
-
-@pelphix.register_experiment
-def train_unet(cfg):
-    from pelphix.train_transformer_unet import UNetModule
-
-    train_dataset = PelvicWorkflowsSequences.from_configs(**cfg.sequences_train)
+    train_dataset = PerphixSequenceDataset.from_configs(**cfg.sequences_train)
     counts = train_dataset.get_sequence_counts()
-    val_dataset = PelvicWorkflowsSequences.from_configs(**cfg.sequences_val)
+    val_dataset = PerphixSequenceDataset.from_configs(**cfg.sequences_val)
 
     train_dataloader = DataLoader(train_dataset, shuffle=True, **cfg.dataloader)
     val_dataloader = DataLoader(val_dataset, **cfg.dataloader)
@@ -150,19 +107,19 @@ def train_unet(cfg):
 
     if cfg.weights_only:
         # For resuming training after changing the scheduler or something
-        module = UNetModule.load_from_checkpoint(
+        module = PelphixModule.load_from_checkpoint(
             cfg.ckpt, **cfg.unet_module, sequence_counts=counts
         )
         trainer.fit(module, train_dataloader, val_dataloader)
     else:
         # Normal training
-        module = UNetModule(**cfg.unet_module, sequence_counts=counts)
+        module = PelphixModule(**cfg.unet_module, sequence_counts=counts)
         trainer.fit(module, train_dataloader, val_dataloader, ckpt_path=cfg.ckpt)
 
 
 @pelphix.register_experiment
-def test_unet(cfg):
-    from pelphix.train_transformer_unet import UNetModule
+def test(cfg):
+    from pelphix.modules.seq import PelphixModule
 
     # onedrive = OneDrive(cfg.onedrive_dir)
     # onedrive.download(cfg.liverpool.root_in_onedrive, skip=cfg.skip_download)
@@ -172,11 +129,11 @@ def test_unet(cfg):
             cfg.results_dir, "lightning_logs", "version_0", "checkpoints", "last.ckpt"
         )
 
-    dataset = PelvicWorkflowsSequences.from_configs(**cfg.sequences_test)
+    dataset = PerphixSequenceDataset.from_configs(**cfg.sequences_test)
     # TODO: flip test-set X-ray images horizontallyk
 
     dataloader = DataLoader(dataset, **cfg.dataloader, shuffle=False)
-    module = UNetModule.load_from_checkpoint(
+    module = PelphixModule.load_from_checkpoint(
         cfg.ckpt,
         results_dir=cfg.results_dir,
         test_dataset=dataset,
