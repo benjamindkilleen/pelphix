@@ -41,7 +41,8 @@ from .workflow_state import Task, Activity, Acquisition, Frame, WorkflowState, F
 from ..tools import Tool, Screw, get_screw, get_screw_choices
 from ..shapes import Cylinder, Mesh
 from ..utils import coco_utils, save_json, load_json
-from perphix.base import PerphixBase
+
+from perphix.data.base import PerphixBase
 
 
 log = logging.getLogger(__name__)

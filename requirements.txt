@@ -31,7 +31,7 @@ open3d
 ml_collections
 
 deepdrr==1.1.2
--e ../perphix # TODO point to git repo
+-e ./perphix # TODO point to git repo
 
 # development
 pre-commit

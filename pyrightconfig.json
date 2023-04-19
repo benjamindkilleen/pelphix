@@ -8,5 +8,6 @@
         "**/data",
         "conf",
         "images",
+        "procrustes",
     ],
 }

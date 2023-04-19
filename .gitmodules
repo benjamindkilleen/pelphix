@@ -1,3 +1,6 @@
 [submodule "procrustes"]
 	path = procrustes
 	url = git@github.com:theochem/procrustes.git
+[submodule "perphix"]
+	path = perphix
+	url = git@github.com:arcadelab/perphix.git
