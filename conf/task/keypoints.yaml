@@ -1,2 +1,0 @@
-name: keypoints
-model_config_file: ${keypoints_config_file} 

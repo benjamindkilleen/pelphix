@@ -150,6 +150,8 @@ class PelphixSim(PerphixBase, Process):
         if not self.root.exists():
             self.root.mkdir(parents=True)
 
+        log.debug(f"pelvis_annotations_dir: {self.pelvis_annotations_dir}")
+
         case_names = sorted(
             [
                 case.name
@@ -158,11 +160,11 @@ class PelphixSim(PerphixBase, Process):
             ]
         )
         if train:
-            self.name = f"pelvic_workflows_{num_procedures:06d}_train"
+            self.name = f"pelphix_{num_procedures:06d}_train"
             self.num_procedures = num_procedures * (len(case_names) - num_val) // len(case_names)
             self.case_names = case_names[num_val:]
         else:
-            self.name = f"pelvic_workflows_{num_procedures:06d}_val"
+            self.name = f"pelphix_{num_procedures:06d}_val"
             self.num_procedures = num_procedures * num_val // len(case_names)
             self.case_names = case_names[:num_val]
 
@@ -1570,11 +1572,9 @@ class PelphixSim(PerphixBase, Process):
             log.info("No existing procedures found. Starting from scratch.")
 
         if self.num_workers == 0:
-            # For debugging
             for procedure_idx in range(self.num_procedures):
                 if procedure_idx not in procedures_done:
-                    pass
-                    # self.sample_procedure(procedure_idx)
+                    self.sample_procedure(procedure_idx)
                 log.info(f"Finished procedure {procedure_idx} / {self.num_procedures}")
         else:
             job_queue = mp.Queue(self.num_procedures)

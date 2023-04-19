@@ -11,7 +11,6 @@ hydra:
 defaults:
   - _self_ # makes it so the subconfigs override the primary
   - experiment: train
-  - task: instances
   - scheduler: plateau
 
   # Use the configured logging.
@@ -26,7 +25,7 @@ experiment:
 
 onedrive_dir: ~/datasets/OneDrive
 nmdid_dir: sambhav/NMDID-ARCADE
-pelvis_annotations_dir: 2023-03-12_pelvis_annotations_ssm
+pelvis_annotations_dir: 2023-03-12_pelvis-annotations_ssm
 skip_download: True
 num_workers: 0
 num_procedures: 10000
@@ -150,16 +149,16 @@ sequences_train:
   configs:
     # - loader: load
     #   config:
-    #     annotation_path: ${pelvic_workflows.root}/annotations/pelvic_workflows_000050_train.json
-    #     image_dir: ${pelvic_workflows.root}/pelvic_workflows_000050_train
+    #     annotation_path: ${sim.root}/annotations/pelphix_000050_train.json
+    #     image_dir: ${sim.root}/pelphix_000050_train
     - loader: load
       config: 
-        annotation_path: ${pelvic_workflows.root}/annotations/pelvic_workflows_000400_train.json
-        image_dir: ${pelvic_workflows.root}/pelvic_workflows_000400_train
+        annotation_path: ${sim.root}/annotations/pelphix_000400_train.json
+        image_dir: ${sim.root}/pelphix_000400_train
     - loader: load
       config:
-        annotation_path: ${pelvic_workflows.root}/annotations/pelvic_workflows_000345_train.json
-        image_dir: ${pelvic_workflows.root}/pelvic_workflows_000345_train
+        annotation_path: ${sim.root}/annotations/pelphix_000345_train.json
+        image_dir: ${sim.root}/pelphix_000345_train
 
 sequences_val:
   seq_len: ${unet_seq_len}
@@ -169,8 +168,8 @@ sequences_val:
   configs:
     - loader: load
       config:
-        annotation_path: ${pelvic_workflows.root}/annotations/pelvic_workflows_000400_val.json
-        image_dir: ${pelvic_workflows.root}/pelvic_workflows_000400_val
+        annotation_path: ${sim.root}/annotations/pelphix_000400_val.json
+        image_dir: ${sim.root}/pelphix_000400_val
 
 sequences_test:
   seq_len: ${unet_seq_len} # 300 rather than 100
