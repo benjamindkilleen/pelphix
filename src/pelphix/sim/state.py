@@ -364,6 +364,8 @@ class SimState:
             log.critical(
                 f"Acquisition {self.task} / {self.activity} / {self.acquisition} has no transitions defined!"
             )
+            log.debug(f"acquisition_transitions: {self.acquisition_transitions[self.task]}")
+            exit()
             return Acquisition.end
 
     def sample_frame(self) -> Frame:

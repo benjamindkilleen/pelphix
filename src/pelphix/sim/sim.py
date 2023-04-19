@@ -956,7 +956,7 @@ class PelphixSim(PerphixBase, Process):
         wire_catid = self.get_annotation_catid("wire")
         screw_catid = self.get_annotation_catid("screw")
 
-        max_corridors = np.random.randint(len(corridors) + 1)
+        max_corridors = np.random.randint(min(len(corridors), 4), len(corridors) + 1)
 
         # Wires and screws accessed by the corresponding corridor name.
         wires: dict[str, Tool] = dict()

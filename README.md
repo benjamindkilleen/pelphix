@@ -85,10 +85,6 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
 
 ## TODO
 
-Critica:
-
-- [ ] Just copied the Simulation from the other repo, need to fix bugs from removing the `Step` from the Workflow State.
-
 TODO before rebuttal:
 
 - [ ] Add view-invariant pretraining dataset.
@@ -104,8 +100,8 @@ TODO before rebuttal:
   - [X] Remove `Step` from the Workflow State.
   - [X] Randomly sample task order. Allow screw insertion to be sampled at any time.
   - [ ] Limit views for each task to ones actually used.
-  - [ ] Add missing views.
-  - [ ] Make sampling more realistic for views/positions.
+  - [ ] Add missing views (IO, OO)
+  - [ ] Make sampling more realistic for views/positions (fiddle with bounds, make lower bounds larger, more randomness)
   - [ ] Corridor segmentation should never vary, only the distance along it that wires/screws are inserted.
   - [ ] Wire should always go the full length of the corridor (whatever that is for the given corridor).
   - [ ] "Correct" view might be randomly sampled, but tolerance should be smaller?

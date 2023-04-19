@@ -17,6 +17,8 @@ from deepdrr import geo
 from matplotlib import pyplot as plt
 from numpy.typing import ArrayLike
 
+from . import mesh_utils
+
 log = logging.getLogger(__name__)
 
 
@@ -191,14 +193,14 @@ def get_drawings_dir() -> Path:
     Download the data if it is not present.
 
     """
-    data_dir = (Path(__file__).parent / ".." / ".." / "data" / "tools").resolve()
+    data_dir = (Path(__file__).parent / ".." / ".." / ".." / "data" / "tools").resolve()
     data_dir.mkdir(exist_ok=True, parents=True)
     return data_dir
 
 
 def get_cache_dir() -> Path:
     """Get the path to the generic cache dir."""
-    cache_dir = (Path(__file__).parent / ".." / ".." / "cache").resolve()
+    cache_dir = (Path(__file__).parent / ".." / ".." / ".." / "cache").resolve()
     cache_dir.mkdir(exist_ok=True)
     return cache_dir
 

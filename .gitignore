@@ -143,6 +143,7 @@ images/coco_examples/
 data/annotations/*
 data/pelvis_annotations_*/*
 data/tools
+results/*
 
 **.zip
 data/MOTS20

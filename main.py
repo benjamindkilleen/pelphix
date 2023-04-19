@@ -118,6 +118,12 @@ def train(cfg):
 
 
 @pelphix.register_experiment
+def vis(cfg):
+    """Visualize the training set."""
+    dataset = PerphixSequenceDataset.from_configs(**cfg.sequences_train)
+
+
+@pelphix.register_experiment
 def test(cfg):
     from pelphix.modules.seq import PelphixModule
 

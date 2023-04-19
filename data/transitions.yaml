@@ -74,29 +74,24 @@ _screw_activities:
     end: 1
 
 activity:
-  # step currently in
-  teardrop: 
-    # task currently in
-    teardrop_left: ${_wire_activities}
-    teardrop_right: ${_wire_activities}
-  ramus: 
-    ramus_left: ${_wire_activities}
-    ramus_right: ${_wire_activities}
-  sacrum: 
-    s1_left: ${_wire_activities}
-    s1_right: ${_wire_activities}
-    s1: ${_wire_activities}
-    s2: ${_wire_activities}
-  screw_insertion:
-    screw_s1_left: ${_screw_activities}
-    screw_s1_right: ${_screw_activities}
-    screw_s1: ${_screw_activities}
-    screw_s2: ${_screw_activities}
-    screw_ramus_left: ${_screw_activities}
-    screw_ramus_right: ${_screw_activities}
-    screw_teardrop_left: ${_screw_activities}
-    screw_teardrop_right: ${_screw_activities}
- 
+  # task currently in
+  teardrop_left: ${_wire_activities}
+  teardrop_right: ${_wire_activities}
+  ramus_left: ${_wire_activities}
+  ramus_right: ${_wire_activities}
+  s1_left: ${_wire_activities}
+  s1_right: ${_wire_activities}
+  s1: ${_wire_activities}
+  s2: ${_wire_activities}
+  screw_s1_left: ${_screw_activities}
+  screw_s1_right: ${_screw_activities}
+  screw_s1: ${_screw_activities}
+  screw_s2: ${_screw_activities}
+  screw_ramus_left: ${_screw_activities}
+  screw_ramus_right: ${_screw_activities}
+  screw_teardrop_left: ${_screw_activities}
+  screw_teardrop_right: ${_screw_activities}
+
 
 # ACQUISITION PROBABILITIES
 
@@ -241,50 +236,45 @@ _s2_acquisitions:
   teardrop_right: ${merge:${common_views}, ${secondary_views}, ${s2_views}}
 
 acquisition:
-  # step currently in
-  teardrop:
-    # task currently in
-    teardrop_left:
-      # activity currently in
-      position_wire: ${_teardrop_left_acquisitions}
-      insert_wire: ${_teardrop_left_acquisitions}
-    teardrop_right:
-      position_wire: ${_teardrop_right_acquisitions}
-      insert_wire: ${_teardrop_right_acquisitions}
-  ramus:
-    ramus_left:
-      position_wire: ${_ramus_left_acquisitions}
-      insert_wire: ${_ramus_left_acquisitions}
-    ramus_right:
-      position_wire: ${_ramus_right_acquisitions}
-      insert_wire: ${_ramus_right_acquisitions}
-  sacrum:
-    s1_left:
-      position_wire: ${_s1_left_acquisitions}
-      insert_wire: ${_s1_left_acquisitions}
-    s1_right:
-      position_wire: ${_s1_right_acquisitions}
-      insert_wire: ${_s1_right_acquisitions}
-    s1:
-      position_wire: ${_s1_acquisitions}
-      insert_wire: ${_s1_acquisitions}
-    s2:
-      position_wire: ${_s2_acquisitions}
-      insert_wire: ${_s2_acquisitions}
-  screw_insertion:
-    screw_s1_left:
-      insert_screw: ${_s1_left_acquisitions}
-    screw_s1_right:
-      insert_screw: ${_s1_right_acquisitions}
-    screw_s1:
-      insert_screw: ${_s1_acquisitions}
-    screw_s2:
-      insert_screw: ${_s2_acquisitions}
-    screw_ramus_left:
-      insert_screw: ${_ramus_left_acquisitions}
-    screw_ramus_right:
-      insert_screw: ${_ramus_right_acquisitions}
-    screw_teardrop_left:
-      insert_screw: ${_teardrop_left_acquisitions}
-    screw_teardrop_right:
-      insert_screw: ${_teardrop_left_acquisitions}
+  # task currently in
+  teardrop_left:
+    # activity currently in
+    position_wire: ${_teardrop_left_acquisitions}
+    insert_wire: ${_teardrop_left_acquisitions}
+  teardrop_right:
+    position_wire: ${_teardrop_right_acquisitions}
+    insert_wire: ${_teardrop_right_acquisitions}
+  ramus_left:
+    position_wire: ${_ramus_left_acquisitions}
+    insert_wire: ${_ramus_left_acquisitions}
+  ramus_right:
+    position_wire: ${_ramus_right_acquisitions}
+    insert_wire: ${_ramus_right_acquisitions}
+  s1_left:
+    position_wire: ${_s1_left_acquisitions}
+    insert_wire: ${_s1_left_acquisitions}
+  s1_right:
+    position_wire: ${_s1_right_acquisitions}
+    insert_wire: ${_s1_right_acquisitions}
+  s1:
+    position_wire: ${_s1_acquisitions}
+    insert_wire: ${_s1_acquisitions}
+  s2:
+    position_wire: ${_s2_acquisitions}
+    insert_wire: ${_s2_acquisitions}
+  screw_s1_left:
+    insert_screw: ${_s1_left_acquisitions}
+  screw_s1_right:
+    insert_screw: ${_s1_right_acquisitions}
+  screw_s1:
+    insert_screw: ${_s1_acquisitions}
+  screw_s2:
+    insert_screw: ${_s2_acquisitions}
+  screw_ramus_left:
+    insert_screw: ${_ramus_left_acquisitions}
+  screw_ramus_right:
+    insert_screw: ${_ramus_right_acquisitions}
+  screw_teardrop_left:
+    insert_screw: ${_teardrop_left_acquisitions}
+  screw_teardrop_right:
+    insert_screw: ${_teardrop_left_acquisitions}
