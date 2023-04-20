@@ -957,6 +957,7 @@ class PelphixSim(PerphixBase, Process):
         screw_catid = self.get_annotation_catid("screw")
 
         max_corridors = np.random.randint(min(len(corridors), 4), len(corridors) + 1)
+        log.debug(f"Sampling {max_corridors} corridors.")
 
         # Wires and screws accessed by the corresponding corridor name.
         wires: dict[str, Tool] = dict()
@@ -984,7 +985,9 @@ class PelphixSim(PerphixBase, Process):
             wire_track_ids[name] = wire_track_id
             screw_track_ids[name] = screw_track_id
 
-        intensity_upper_bound = np.random.uniform(2, 10)
+        # intensity_upper_bound = np.random.uniform(2, 10)
+        log.warning(f"TODO: remove this hard-coded intensity upper bound.")
+        intensity_upper_bound = 3
         projector = Projector(
             [ct, *wires.values(), *screws.values()],
             device=device,

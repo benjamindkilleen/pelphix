@@ -272,7 +272,10 @@ class SimState:
     def sample_task(self) -> Task:
         assert self.task != Task.end
 
-        if len(self.wires_done) >= self.max_corridors:
+        if (
+            len(self.wires_done) >= self.max_corridors
+            and len(self.screws_done) >= self.max_corridors
+        ):
             return Task.end
         elif self.task in self.task_transitions:
             transitions = self.task_transitions[self.task]

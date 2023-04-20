@@ -18,9 +18,11 @@ import torch
 import matplotlib.pyplot as plt
 from omegaconf import DictConfig
 from omegaconf import OmegaConf
+from hydra.utils import get_original_cwd
 from rich.traceback import install
 from torch.utils.data import DataLoader
 import scienceplots
+import imageio.v3 as iio
 
 # Nosort
 import deepdrr
@@ -119,8 +121,38 @@ def train(cfg):
 
 @pelphix.register_experiment
 def vis(cfg):
+    from pygifsicle import optimize
+
     """Visualize the training set."""
     dataset = PerphixSequenceDataset.from_configs(**cfg.sequences_train)
+    for procedure_idx in [0]:
+        if procedure_idx >= dataset.num_procedures:
+            break
+        frames = dataset.visualize_procedure(procedure_idx)
+
+        frames = frames[:60]
+
+        # Repeat the last frame for a few seconds
+        last_frame = frames[-1].copy()
+        last_frames = []
+        for _ in range(20):
+            last_frames.append(last_frame.copy())
+        frames = np.concatenate([frames, last_frames], axis=0)
+
+        images_dir = Path(get_original_cwd()) / "images"
+        output_path = images_dir / f"procedure_{procedure_idx:03d}.gif"
+        fps = 2
+
+        log.info(f"Saving gif to {output_path}...")
+        iio.imwrite(
+            output_path,
+            frames,
+            duration=3 * int(len(frames)),
+            loop=0,
+        )
+
+        # log.info("Optimizing gif...")
+        # optimize(output_path)
 
 
 @pelphix.register_experiment

@@ -4,7 +4,7 @@
 
 Surgical Phase Recognition from X-ray Images in Percutaneous Pelvic Fixation
 
-![Pelphix](images/liverpool_000000000_sequences.gif)
+![Pelphix](images/procedure_000.gif)
 
 </div>
 

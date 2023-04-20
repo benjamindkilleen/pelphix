@@ -6,6 +6,7 @@ hydra:
     subdir: ${hydra.job.num}_${hydra.job.override_dirname}
   verbose:
     - pelphix
+    - perphix
     # - deepdrr
 
 defaults:
@@ -147,18 +148,22 @@ sequences_train:
   image_size: ${unet_image_size}
   triplets: ${triplets}
   configs:
-    # - loader: load
-    #   config:
-    #     annotation_path: ${sim.root}/annotations/pelphix_000050_train.json
-    #     image_dir: ${sim.root}/pelphix_000050_train
-    - loader: load
-      config: 
-        annotation_path: ${sim.root}/annotations/pelphix_000400_train.json
-        image_dir: ${sim.root}/pelphix_000400_train
     - loader: load
       config:
-        annotation_path: ${sim.root}/annotations/pelphix_000345_train.json
-        image_dir: ${sim.root}/pelphix_000345_train
+        annotation_path: ${sim.root}/annotations/pelphix_000002_train.json
+        image_dir: ${sim.root}/pelphix_000002_train
+    # - loader: load
+    #   config:
+    #     annotation_path: ${sim.root}/annotations/pelphix_000032_train.json
+    #     image_dir: ${sim.root}/pelphix_000032_train
+    # - loader: load
+    #   config: 
+    #     annotation_path: ${sim.root}/annotations/pelphix_000400_train.json
+    #     image_dir: ${sim.root}/pelphix_000400_train
+    # - loader: load
+    #   config:
+    #     annotation_path: ${sim.root}/annotations/pelphix_000345_train.json
+    #     image_dir: ${sim.root}/pelphix_000345_train
 
 sequences_val:
   seq_len: ${unet_seq_len}

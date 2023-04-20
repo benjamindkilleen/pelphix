@@ -7,8 +7,8 @@ _tasks:
   teardrop_right: 1
   ramus_left: 1
   ramus_right: 1
-  s1_left: 1
-  s1_right: 1
+  s1_left: 0.25
+  s1_right: 0.25
   s1: 1
   s2: 1
   screw_teardrop_left: 1
@@ -19,7 +19,6 @@ _tasks:
   screw_s1_right: 1
   screw_s1: 1
   screw_s2: 1
-  end: 1
 
 # TASK TRANSITION PROBABILITIES
 task:
@@ -64,14 +63,12 @@ _wire_activities:
   insert_wire:
     position_wire: 1
     insert_wire: 2
-    end: 1
 
 _screw_activities:
   start:
     insert_screw: 1
   insert_screw:
     insert_screw: 1
-    end: 1
 
 activity:
   # task currently in
@@ -96,10 +93,10 @@ activity:
 # ACQUISITION PROBABILITIES
 
 # Common to all initial states
-common_views:
-  ap: 1
-  inlet: 1
-  outlet: 1
+common_views: {}
+  # ap: 1
+  # inlet: 1
+  # outlet: 1
 
 start_views: {}
 
@@ -110,39 +107,49 @@ secondary_views:
 # unique to teardrop_left task
 teardrop_left_views:
   teardrop_left: 2
-  oblique_left: 1
-  oblique_right: 1
+  oblique_left: 2
+  # oblique_right: 1
   # TODO: add oblique views
 
 # unique to teardrop_right task
 teardrop_right_views:
   teardrop_right: 2
-  oblique_left: 1
-  oblique_right: 1
+  # oblique_left: 1
+  oblique_right: 2
   # TODO: add oblique views
 
 # unique to ramus_left task
 ramus_left_views:
-  oblique_left: 2
+  oblique_right: 2
+  inlet: 2
 
 # unique to ramus_right task
 ramus_right_views:
-  oblique_right: 2
+  oblique_left: 2
+  inlet: 2
 
 # unique to s1_left task
 s1_left_views:
+  ap: 1
+  outlet: 1
   lateral: 1
 
 # unique to s1_right task
 s1_right_views:
+  ap: 1
+  outlet: 1
   lateral: 1
 
 # unique to s1 task
 s1_views:
+  ap: 1
+  outlet: 1
   lateral: 1
 
 # unique to s2 task
 s2_views:
+  ap: 1
+  outlet: 1
   lateral: 1
 
 

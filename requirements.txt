@@ -30,6 +30,7 @@ pycocotools
 open3d
 ml_collections
 shapely
+pygifsicle
 
 deepdrr==1.1.2
 -e ./perphix # TODO point to git repo
