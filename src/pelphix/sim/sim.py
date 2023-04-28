@@ -307,8 +307,6 @@ class PelphixSim(PerphixBase, Process):
                 ):
                     corridors[name] = corridors[name].flip()
 
-                corridors[name] = corridors[name].shorten(self.corridor_fraction[name])
-
         return ct, seg_volumes, seg_meshes, corridors, pelvis_keypoints
 
     def get_APP(self, pelvis_keypoints: dict[str, geo.Point3D]) -> geo.FrameTransform:
@@ -480,8 +478,8 @@ class PelphixSim(PerphixBase, Process):
             source_to_detector_distance=source_to_detector_distance,
         )
 
-    # Fraction of the annotatation that is used for the corridor.
-    corridor_fraction = dict(
+    # Fraction of the annotatation that determines max wire insertion.
+    wire_insertion_fraction = dict(
         s1_left=0.7,
         s1_right=0.7,
         s1=0.7,
@@ -490,6 +488,18 @@ class PelphixSim(PerphixBase, Process):
         ramus_right=0.98,
         teardrop_left=0.98,
         teardrop_right=0.98,
+    )
+
+    # Fraction of the annotaiton length that is the max for the screw.
+    screw_insertion_fraction = dict(
+        s1_left=0.7,
+        s1_right=0.7,
+        s1=0.7,
+        s2=0.7,
+        ramus_left=0.98,
+        ramus_right=0.98,
+        teardrop_left=0.65,
+        teardrop_right=0.65,
     )
 
     # Mapping to which meshes the corridor might start on.
@@ -652,6 +662,9 @@ class PelphixSim(PerphixBase, Process):
             progress = (base_index - p_index).dot(q_index - p_index) / (
                 q_index - p_index
             ).normsqr() + 1
+
+        # TODO: Instead of taking in `is_wire`, we should take in the necessary progress, from
+        # wire_insertion_fraction. Except for screws, we just can do the above.
 
         log.debug(f"Apparent progress: {progress:.3f}")
         if progress >= 0.95:

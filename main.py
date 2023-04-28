@@ -23,6 +23,7 @@ from rich.traceback import install
 from torch.utils.data import DataLoader
 import scienceplots
 import imageio.v3 as iio
+import imageio
 
 # Nosort
 import deepdrr
@@ -130,8 +131,6 @@ def vis(cfg):
             break
         frames = dataset.visualize_procedure(procedure_idx)
 
-        frames = frames[:60]
-
         # Repeat the last frame for a few seconds
         last_frame = frames[-1].copy()
         last_frames = []
@@ -140,16 +139,22 @@ def vis(cfg):
         frames = np.concatenate([frames, last_frames], axis=0)
 
         images_dir = Path(get_original_cwd()) / "images"
-        output_path = images_dir / f"procedure_{procedure_idx:03d}.gif"
-        fps = 2
+        output_path = images_dir / f"procedure_{procedure_idx:03d}.mp4"
+        writer = imageio.get_writer(output_path, fps=5)
+        log.info(f"Saving mp4 to {output_path}...")
+        for frame in frames:
+            writer.append_data(frame)
+        writer.close()
 
-        log.info(f"Saving gif to {output_path}...")
-        iio.imwrite(
-            output_path,
-            frames,
-            duration=3 * int(len(frames)),
-            loop=0,
-        )
+        # output_path = images_dir / f"procedure_{procedure_idx:03d}.gif"
+
+        # log.info(f"Saving gif to {output_path}...")
+        # iio.imwrite(
+        #     output_path,
+        #     frames,
+        #     duration=250,  # int(len(frames)),
+        #     loop=0,
+        # )
 
         # log.info("Optimizing gif...")
         # optimize(output_path)

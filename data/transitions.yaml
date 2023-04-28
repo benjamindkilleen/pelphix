@@ -94,9 +94,6 @@ activity:
 
 # Common to all initial states
 common_views: {}
-  # ap: 1
-  # inlet: 1
-  # outlet: 1
 
 start_views: {}
 

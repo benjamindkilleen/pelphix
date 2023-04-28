@@ -72,7 +72,6 @@ def sample_transition(
 #
 # So we need to know the visited tasks (each task can only be visited once). Maintain the set of
 # visited tasks and possible tasks.
-#
 
 
 class Task(StrEnum):
@@ -336,6 +335,14 @@ class SimState:
             # If we're not positioning the wire, then we need to go back to positioning the wire.
             # Therefore end the current acquisition. This causes a new activity to be sampled (which
             # will inherit wire_looks_good).
+            return Acquisition.end
+        elif (
+            self.activity == Activity.insert_wire
+            and self.wire_looks_good
+            and self.wire_looks_inserted
+        ):
+            return Acquisition.end
+        elif self.activity == Activity.insert_screw and self.screw_looks_inserted:
             return Acquisition.end
         elif (
             not self.need_new_view

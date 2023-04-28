@@ -99,11 +99,12 @@ TODO before rebuttal:
 - [ ] Fix sequence generation to be more realistic.
   - [X] Remove `Step` from the Workflow State.
   - [X] Randomly sample task order. Allow screw insertion to be sampled at any time.
-  - [ ] Limit views for each task to ones actually used.
-  - [ ] Add missing views (IO, OO)
+  - [X] Limit views for each task to ones actually used.
+  - [X] Add missing views (IO, OO)
   - [ ] Make sampling more realistic for views/positions (fiddle with bounds, make lower bounds larger, more randomness)
-  - [ ] Corridor segmentation should never vary, only the distance along it that wires/screws are inserted.
-  - [ ] Wire should always go the full length of the corridor (whatever that is for the given corridor).
+  - [X] Corridor segmentation should never vary, only the distance along it that wires/screws are inserted.
+  - [X] Wire should always go the correct length along the corridor (whatever that is for the given corridor).
+  - [ ] As soon as the wire is fully inserted, move to the next task.
   - [ ] "Correct" view might be randomly sampled, but tolerance should be smaller?
 - [ ] Minor model changes
   - [ ] Pre-training step, with `(black, black, frame)` as input.
