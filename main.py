@@ -129,7 +129,7 @@ def vis(cfg):
     for procedure_idx in [0]:
         if procedure_idx >= dataset.num_procedures:
             break
-        frames = dataset.visualize_procedure(procedure_idx)
+        frames = dataset.visualize_procedure(procedure_idx, show_annotations=cfg.show)
 
         # Repeat the last frame for a few seconds
         last_frame = frames[-1].copy()
@@ -140,7 +140,7 @@ def vis(cfg):
 
         images_dir = Path(get_original_cwd()) / "images"
         output_path = images_dir / f"procedure_{procedure_idx:03d}.mp4"
-        writer = imageio.get_writer(output_path, fps=5)
+        writer = imageio.get_writer(output_path, fps=cfg.fps)
         log.info(f"Saving mp4 to {output_path}...")
         for frame in frames:
             writer.append_data(frame)

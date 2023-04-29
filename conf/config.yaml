@@ -31,6 +31,10 @@ skip_download: True
 num_workers: 0
 num_procedures: 10000
 
+# vis
+fps: 2
+show: True
+
 # SSM parameters
 n_points: 5000
 pelvis_n_points: 10000
@@ -61,14 +65,14 @@ sim:
   cache_dir: ${hydra:runtime.cwd}/cache/pelphix
   view_tolerance:
     # in degrees.
-    ap: 5
-    lateral: 10
-    inlet: 5
-    outlet: 10
-    oblique_left: 5
-    oblique_right: 5
-    teardrop_left: 3
-    teardrop_right: 3
+    ap: 3
+    lateral: 5
+    inlet: 3
+    outlet: 5
+    oblique_left: 3
+    oblique_right: 3
+    teardrop_left: 2
+    teardrop_right: 2
   num_workers: ${num_workers}
 
 # Other experimental variables

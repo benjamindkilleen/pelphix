@@ -1,1 +1,3 @@
 sequences_train: ${sequences_train}
+fps: ${fps}
+show: ${show}

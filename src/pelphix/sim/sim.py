@@ -70,13 +70,13 @@ class PelphixSim(PerphixBase, Process):
 
     # For wire adjustments
     MAX_ANGLE_BOUND = math.radians(30)
-    MIN_ANGLE_BOUND = math.radians(3)
+    MIN_ANGLE_BOUND = math.radians(5)  # smaller than this is just random
     MAX_TIP_BOUND = 10
     MIN_TIP_BOUND = 5
 
     # For view adjustments
     MAX_VIEW_ANGLE_BOUND = math.radians(45)
-    MIN_VIEW_ANGLE_BOUND = math.radians(1)
+    MIN_VIEW_ANGLE_BOUND = math.radians(5)  # smaller than this is just random
     MAX_VIEW_POSITION_BOUND = 100
     MIN_VIEW_POSITION_BOUND = 5
 
@@ -336,7 +336,7 @@ class PelphixSim(PerphixBase, Process):
         return geo.F.from_rt(rot.T, sps_midpoint)
 
     inlet_angle = math.radians(45)  # about X
-    outlet_angle = math.radians(-45)  # about X
+    outlet_angle = math.radians(-40)  # about X
     oblique_left_angle = math.radians(45)  # about Z
     oblique_right_angle = math.radians(-45)  # about Z
 
@@ -616,7 +616,7 @@ class PelphixSim(PerphixBase, Process):
             return False
 
     def evaluate_insertion(
-        self, tool: Tool, corridor: Cylinder, device: SimpleDevice, is_wire: bool = True
+        self, state: SimState, tool: Tool, corridor: Cylinder, device: SimpleDevice
     ) -> bool:
         """Evaluate if the wire is inserted, based on its projection.
 
@@ -653,25 +653,15 @@ class PelphixSim(PerphixBase, Process):
         p_index = corridor_projection.start.line().meet(tool_in_index)
         q_index = corridor_projection.end.line().meet(tool_in_index)
 
-        if is_wire:
+        if state.task.is_wire():
             tip_index = index_from_world @ tool.tip_in_world
             progress = (tip_index - p_index).dot(q_index - p_index) / (q_index - p_index).normsqr()
+            return progress >= self.wire_insertion_fraction[state.task]
         else:
             # For the screw, want to stop actually when the base is at the startpoint.
-            base_index = index_from_world @ tool.base_in_world
-            progress = (base_index - p_index).dot(q_index - p_index) / (
-                q_index - p_index
-            ).normsqr() + 1
-
-        # TODO: Instead of taking in `is_wire`, we should take in the necessary progress, from
-        # wire_insertion_fraction. Except for screws, we just can do the above.
-
-        log.debug(f"Apparent progress: {progress:.3f}")
-        if progress >= 0.95:
-            # Wire/screw is fully inserted; continue.
-            return True
-
-        return False
+            base_index = index_from_world @ tool.base_in_world  # screw base in index
+            progress = (base_index - p_index).dot(q_index - p_index) / (q_index - p_index).normsqr()
+            return progress >= -0.01
 
     def position_wire(
         self,
@@ -778,6 +768,7 @@ class PelphixSim(PerphixBase, Process):
 
     def sample_wire_advancement(
         self,
+        state: SimState,
         tool: Tool,
         corridor: Cylinder,
         device: SimpleDevice,
@@ -794,6 +785,8 @@ class PelphixSim(PerphixBase, Process):
             The advancement of the tool in mm.
         """
 
+        assert state.task.is_wire(), f"Cannot sample wire advancement for {state.task}"
+
         index_from_world = device.index_from_world
         tool_in_index = index_from_world @ tool.centerline_in_world
         corridor_projection = corridor.project(index_from_world)
@@ -802,25 +795,48 @@ class PelphixSim(PerphixBase, Process):
         tip_index = index_from_world @ tool.tip_in_world
 
         progress = (tip_index - p_index).dot(q_index - p_index) / (q_index - p_index).normsqr()
-        if progress >= 0.95:
+        if progress >= self.wire_insertion_fraction[state.task]:
             # Wire is fully inserted; continue.
             return 0
 
         # For wires, sample less.
-        new_progress = np.clip(np.random.uniform(progress + 0.1, progress + 0.3), 0, 1)
+        new_progress = np.clip(
+            np.random.uniform(progress + 0.1, progress + 0.3),
+            0,
+            self.wire_insertion_fraction[state.task],
+        )
         advancement = (new_progress - progress) * corridor.length()
 
         return advancement
 
     def sample_screw_advancement(
         self,
+        state: SimState,
         screw: Tool,
         corridor: Cylinder,
     ) -> float:
-        """Sample screw advancement."""
+        """Sample screw advancement.
+
+        Args:
+            state: The state of the simulation.
+            screw: The screw.
+            corridor: The corridor.
+
+        Returns:
+            The advancement of the screw in mm.
+        """
         startpoint = corridor.startplane().meet(screw.centerline_in_world)
         trajectory = screw.tip_in_world - screw.base_in_world
-        advancement = -(screw.base_in_world - startpoint).dot(trajectory) / trajectory.norm()
+
+        # Advancement to bring tip of the screw to the startpoint.
+        tip_advancement = (startpoint - screw.tip_in_world).dot(trajectory) / trajectory.norm()
+        if tip_advancement > 0:
+            # Haven't taken the shot with the screw up against the bone yet,
+            # so just advance the tip to the bone.
+            return tip_advancement
+
+        # Advancement to bring base of the screw to the startpoint.
+        advancement = (startpoint - screw.base_in_world).dot(trajectory) / trajectory.norm()
         if np.random.uniform() < 0.5:
             advancement = np.random.uniform(0, advancement)
         log.debug(f"advancement: {advancement}")
@@ -949,7 +965,8 @@ class PelphixSim(PerphixBase, Process):
 
         # sample the skill factor
         # log.warning(f"TODO: remove this hard-coded false positive rate.")
-        skill_factor = np.random.uniform(0.6, 0.8)
+        # smaller skill factor is more skilled
+        skill_factor = np.random.uniform(0.2, 0.5)  # .6, .8
         false_positive_rate = np.random.uniform(0.05, 0.2)
 
         # Sample the device parameters randomly.
@@ -969,7 +986,10 @@ class PelphixSim(PerphixBase, Process):
         wire_catid = self.get_annotation_catid("wire")
         screw_catid = self.get_annotation_catid("screw")
 
-        max_corridors = np.random.randint(min(len(corridors), 4), len(corridors) + 1)
+        # Sample the procedure.
+        log.warning(f"TODO: remove this hard-coded procedure length.")
+        max_corridors = 1
+        # max_corridors = np.random.randint(min(len(corridors), 4), len(corridors) + 1)
         log.debug(f"Sampling {max_corridors} corridors.")
 
         # Wires and screws accessed by the corresponding corridor name.
@@ -981,13 +1001,11 @@ class PelphixSim(PerphixBase, Process):
         for i, name in enumerate(corridors):
             corr = corridors[name]
             wire = deepdrr.vol.KWire.from_example()
-            if np.random.uniform() < 0.8:
-                screw_type = get_screw(corr.length())
-            else:
-                screw_choices = list(
-                    get_screw_choices(corr.length()) - get_screw_choices(corr.length() - 40)
-                )
-                screw_type = screw_choices[np.random.choice(len(screw_choices))]
+            insertable_length = corr.length() * self.screw_insertion_fraction[name]
+            screw_choices = list(
+                get_screw_choices(insertable_length) - get_screw_choices(insertable_length - 20)
+            )
+            screw_type = screw_choices[np.random.choice(len(screw_choices))]
             screw = screw_type(density=0.06)
             wire.place_center([99999, 99999, 99999])
             screw.place_center([99999, 99999, 99999])
@@ -998,9 +1016,9 @@ class PelphixSim(PerphixBase, Process):
             wire_track_ids[name] = wire_track_id
             screw_track_ids[name] = screw_track_id
 
-        # intensity_upper_bound = np.random.uniform(2, 10)
         log.warning(f"TODO: remove this hard-coded intensity upper bound.")
-        intensity_upper_bound = 3
+        # intensity_upper_bound = 3
+        intensity_upper_bound = np.random.uniform(2, 8)
         projector = Projector(
             [ct, *wires.values(), *screws.values()],
             device=device,
@@ -1074,6 +1092,8 @@ class PelphixSim(PerphixBase, Process):
                 # Start of a new task.
                 if state.task.is_wire():
                     # Start of a wire task. Sample a wire position.
+                    # TODO: only do this if the view looks good. Sampling the initial wire position shouldn't be done here.
+
                     wire.orient(
                         geo.random.normal(
                             corridor.startpoint
@@ -1109,19 +1129,20 @@ class PelphixSim(PerphixBase, Process):
                     pass
                 elif state.activity == Activity.insert_wire:
                     state.wire_looks_inserted = self.evaluate_insertion(
-                        wire, corridor, device, is_wire=True
+                        state, wire, corridor, device
                     )
                 elif state.activity == Activity.insert_screw:
                     state.screw_looks_inserted = self.evaluate_insertion(
-                        screw, corridor, device, is_wire=False
+                        state,
+                        screw,
+                        corridor,
+                        device,
                     )
                 else:
                     raise ValueError(f"Unknown activity {state.activity}")
                 continue
 
-            # log.debug(
-            # f'TODO: get desired viewpoint properly (only if the viewpoint has changed, and verify these "ideal" views with greg.'
-            # )
+            # Need to sample the desired views for the current acquisitions deterministically.
             desired_view = geo.ray(
                 corridor.midpoint,
                 self.get_view_direction(state.acquisition, world_from_APP, corridors),
@@ -1144,6 +1165,20 @@ class PelphixSim(PerphixBase, Process):
                 # Evaluate the view and whether it will be an assessment or not.
                 state.view_looks_good = self.evaluate_view(state, device, desired_view)
                 continue
+            elif state.frame == Frame.fluoro_hunting:
+                # The view didn't look good, so sample a new one, and determine whether it looks good.
+                current_view = self.sample_next_view(
+                    device,
+                    current_view,
+                    desired_view,
+                    skill_factor=skill_factor,
+                )
+                device.set_view(
+                    *current_view,
+                    up=ct.world_from_anatomical @ geo.random.spherical_uniform(d_phi=FIVE_DEGREES),
+                    source_to_point_fraction=np.random.uniform(0.6, 0.75),
+                )
+                state.view_looks_good = self.evaluate_view(state, device, desired_view)
 
             # Taking an acquisition. Need to get the desired view for the current acquisition.
             image = projector()
@@ -1312,22 +1347,8 @@ class PelphixSim(PerphixBase, Process):
             frame_id += 1
             log.info(f"Acquired image {frame_id}.")
 
-            # Set things up for the next transition.
-            # Evaluations "after" the image acquisition, to determine if the view looks good and, if so, if the object looks good.
             if state.frame == Frame.fluoro_hunting:
-                # The view didn't look good, so sample a new one, and determine whether it looks good.
-                current_view = self.sample_next_view(
-                    device,
-                    current_view,
-                    desired_view,
-                    skill_factor=skill_factor,
-                )
-                device.set_view(
-                    *current_view,
-                    up=ct.world_from_anatomical @ geo.random.spherical_uniform(d_phi=FIVE_DEGREES),
-                    source_to_point_fraction=np.random.uniform(0.65, 0.75),
-                )
-                state.view_looks_good = self.evaluate_view(state, device, desired_view)
+                # If we're in fluoro hunting, we need to sample a new view.
                 continue
 
             assert state.frame == Frame.assessment, f"unexpected frame: {state.frame}"
@@ -1358,10 +1379,10 @@ class PelphixSim(PerphixBase, Process):
                 ):
                     # If the current view can actually assess the insertion of the wire
                     # Insert the wire and determine if it looks good for the next state.
-                    advancement = self.sample_wire_advancement(wire, corridor, device)
+                    advancement = self.sample_wire_advancement(state, wire, corridor, device)
                     wire.advance(advancement)
                     state.wire_looks_inserted = self.evaluate_insertion(
-                        wire, corridor, device, is_wire=True
+                        state, wire, corridor, device
                     )
                     log.debug(f"Wire looks inserted: {state.wire_looks_inserted}")
                 elif state.wire_looks_good:
@@ -1377,10 +1398,10 @@ class PelphixSim(PerphixBase, Process):
                     state.wire_looks_good
                     and abs(wire.centerline_in_world.angle(device.principle_ray)) > THIRTY_DEGREES
                 ):
-                    advancement = self.sample_screw_advancement(screw, corridor)
+                    advancement = self.sample_screw_advancement(state, screw, corridor)
                     screw.advance(advancement)
                     state.screw_looks_inserted = self.evaluate_insertion(
-                        screw, corridor, device, is_wire=False
+                        state, screw, corridor, device
                     )
                 elif state.wire_looks_good:
                     # The wire looks good, but we need to sample a new acquisition with a different view to do the insertion.
