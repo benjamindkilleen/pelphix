@@ -9,8 +9,8 @@ _tasks:
   ramus_right: 1
   s1_left: 0.25
   s1_right: 0.25
-  s1: 1
-  s2: 1
+  s1: 0.5
+  s2: 0.5
   screw_teardrop_left: 1
   screw_teardrop_right: 1
   screw_ramus_left: 1
@@ -29,10 +29,10 @@ task:
     teardrop_right: 1
     ramus_left: 1
     ramus_right: 1
-    s1_left: 1
-    s1_right: 1
-    s1: 1
-    s2: 1
+    s1_left: 0.25
+    s1_right: 0.25
+    s1: 0.5
+    s2: 0.5
   teardrop_left: ${_tasks}
   teardrop_right: ${_tasks}
   ramus_left: ${_tasks}
@@ -92,63 +92,44 @@ activity:
 
 # ACQUISITION PROBABILITIES
 
-# Common to all initial states
+# Common and start views
 common_views: {}
-
 start_views: {}
-
-# Unique to all non-start initial acquisition states.
 secondary_views:
   end: 1
 
-# unique to teardrop_left task
+# Unique views for each corridor
 teardrop_left_views:
-  teardrop_left: 2
-  oblique_left: 2
-  # oblique_right: 1
-  # TODO: add oblique views
-
-# unique to teardrop_right task
+  teardrop_left: 1
+  oblique_left: 1
 teardrop_right_views:
-  teardrop_right: 2
-  # oblique_left: 1
-  oblique_right: 2
-  # TODO: add oblique views
-
-# unique to ramus_left task
+  teardrop_right: 1
+  oblique_right: 1
 ramus_left_views:
-  oblique_right: 2
-  inlet: 2
-
-# unique to ramus_right task
+  oblique_right: 1
+  inlet: 1
 ramus_right_views:
-  oblique_left: 2
-  inlet: 2
-
-# unique to s1_left task
-s1_left_views:
+  oblique_left: 1
+  inlet: 1
+sacrum_views:
   ap: 1
   outlet: 1
   lateral: 1
 
-# unique to s1_right task
-s1_right_views:
+# Unique views for each corridor during screw insertion
+teardrop_left_screw_views:
+  oblique_left: 1
+teardrop_right_screw_views:
+  oblique_right: 1
+ramus_left_screw_views:
+  oblique_right: 1
+  inlet: 1
+ramus_right_screw_views:
+  oblique_left: 1
+  inlet: 1
+sacrum_screw_views:
   ap: 1
   outlet: 1
-  lateral: 1
-
-# unique to s1 task
-s1_views:
-  ap: 1
-  outlet: 1
-  lateral: 1
-
-# unique to s2 task
-s2_views:
-  ap: 1
-  outlet: 1
-  lateral: 1
-
 
 _teardrop_left_acquisitions:
   # Initial acquisition
@@ -162,6 +143,17 @@ _teardrop_left_acquisitions:
   teardrop_left: ${merge:${common_views}, ${secondary_views}, ${teardrop_left_views}}
   teardrop_right: ${merge:${common_views}, ${secondary_views}, ${teardrop_left_views}}
 
+_teardrop_left_screw_acquisitions:
+  start: ${merge:${common_views}, ${start_views}, ${teardrop_left_screw_views}}
+  ap: ${merge:${common_views}, ${secondary_views}, ${teardrop_left_screw_views}}
+  lateral: ${merge:${common_views}, ${secondary_views}, ${teardrop_left_screw_views}}
+  inlet: ${merge:${common_views}, ${secondary_views}, ${teardrop_left_screw_views}}
+  outlet: ${merge:${common_views}, ${secondary_views}, ${teardrop_left_screw_views}}
+  oblique_left: ${merge:${common_views}, ${secondary_views}, ${teardrop_left_screw_views}}
+  oblique_right: ${merge:${common_views}, ${secondary_views}, ${teardrop_left_screw_views}}
+  teardrop_left: ${merge:${common_views}, ${secondary_views}, ${teardrop_left_screw_views}}
+  teardrop_right: ${merge:${common_views}, ${secondary_views}, ${teardrop_left_screw_views}}
+
 _teardrop_right_acquisitions:
   start: ${merge:${common_views}, ${start_views}, ${teardrop_right_views}}
   ap: ${merge:${common_views}, ${secondary_views}, ${teardrop_right_views}}
@@ -172,6 +164,17 @@ _teardrop_right_acquisitions:
   oblique_right: ${merge:${common_views}, ${secondary_views}, ${teardrop_right_views}}
   teardrop_left: ${merge:${common_views}, ${secondary_views}, ${teardrop_right_views}}
   teardrop_right: ${merge:${common_views}, ${secondary_views}, ${teardrop_right_views}}
+
+_teardrop_right_screw_acquisitions:
+  start: ${merge:${common_views}, ${start_views}, ${teardrop_right_screw_views}}
+  ap: ${merge:${common_views}, ${secondary_views}, ${teardrop_right_screw_views}}
+  lateral: ${merge:${common_views}, ${secondary_views}, ${teardrop_right_screw_views}}
+  inlet: ${merge:${common_views}, ${secondary_views}, ${teardrop_right_screw_views}}
+  outlet: ${merge:${common_views}, ${secondary_views}, ${teardrop_right_screw_views}}
+  oblique_left: ${merge:${common_views}, ${secondary_views}, ${teardrop_right_screw_views}}
+  oblique_right: ${merge:${common_views}, ${secondary_views}, ${teardrop_right_screw_views}}
+  teardrop_left: ${merge:${common_views}, ${secondary_views}, ${teardrop_right_screw_views}}
+  teardrop_right: ${merge:${common_views}, ${secondary_views}, ${teardrop_right_screw_views}}
 
 _ramus_left_acquisitions:
   start: ${merge:${common_views}, ${start_views}, ${ramus_left_views}}
@@ -184,6 +187,17 @@ _ramus_left_acquisitions:
   teardrop_left: ${merge:${common_views}, ${secondary_views}, ${ramus_left_views}}
   teardrop_right: ${merge:${common_views}, ${secondary_views}, ${ramus_left_views}}
 
+_ramus_left_screw_acquisitions:
+  start: ${merge:${common_views}, ${start_views}, ${ramus_left_screw_views}}
+  ap: ${merge:${common_views}, ${secondary_views}, ${ramus_left_screw_views}}
+  lateral: ${merge:${common_views}, ${secondary_views}, ${ramus_left_screw_views}}
+  inlet: ${merge:${common_views}, ${secondary_views}, ${ramus_left_screw_views}}
+  outlet: ${merge:${common_views}, ${secondary_views}, ${ramus_left_screw_views}}
+  oblique_left: ${merge:${common_views}, ${secondary_views}, ${ramus_left_screw_views}}
+  oblique_right: ${merge:${common_views}, ${secondary_views}, ${ramus_left_screw_views}}
+  teardrop_left: ${merge:${common_views}, ${secondary_views}, ${ramus_left_screw_views}}
+  teardrop_right: ${merge:${common_views}, ${secondary_views}, ${ramus_left_screw_views}}
+
 _ramus_right_acquisitions:
   start: ${merge:${common_views}, ${start_views}, ${ramus_right_views}}
   ap: ${merge:${common_views}, ${secondary_views}, ${ramus_right_views}}
@@ -195,49 +209,39 @@ _ramus_right_acquisitions:
   teardrop_left: ${merge:${common_views}, ${secondary_views}, ${ramus_right_views}}
   teardrop_right: ${merge:${common_views}, ${secondary_views}, ${ramus_right_views}}
 
-_s1_left_acquisitions:
-  start: ${merge:${common_views}, ${start_views}, ${s1_left_views}}
-  ap: ${merge:${common_views}, ${secondary_views}, ${s1_left_views}}
-  lateral: ${merge:${common_views}, ${secondary_views}, ${s1_left_views}}
-  inlet: ${merge:${common_views}, ${secondary_views}, ${s1_left_views}}
-  outlet: ${merge:${common_views}, ${secondary_views}, ${s1_left_views}}
-  oblique_left: ${merge:${common_views}, ${secondary_views}, ${s1_left_views}}
-  oblique_right: ${merge:${common_views}, ${secondary_views}, ${s1_left_views}}
-  teardrop_left: ${merge:${common_views}, ${secondary_views}, ${s1_left_views}}
-  teardrop_right: ${merge:${common_views}, ${secondary_views}, ${s1_left_views}}
+_ramus_right_screw_acquisitions:
+  start: ${merge:${common_views}, ${start_views}, ${ramus_right_screw_views}}
+  ap: ${merge:${common_views}, ${secondary_views}, ${ramus_right_screw_views}}
+  lateral: ${merge:${common_views}, ${secondary_views}, ${ramus_right_screw_views}}
+  inlet: ${merge:${common_views}, ${secondary_views}, ${ramus_right_screw_views}}
+  outlet: ${merge:${common_views}, ${secondary_views}, ${ramus_right_screw_views}}
+  oblique_left: ${merge:${common_views}, ${secondary_views}, ${ramus_right_screw_views}}
+  oblique_right: ${merge:${common_views}, ${secondary_views}, ${ramus_right_screw_views}}
+  teardrop_left: ${merge:${common_views}, ${secondary_views}, ${ramus_right_screw_views}}
+  teardrop_right: ${merge:${common_views}, ${secondary_views}, ${ramus_right_screw_views}}
 
-_s1_right_acquisitions:
-  start: ${merge:${common_views}, ${start_views}, ${s1_right_views}}
-  ap: ${merge:${common_views}, ${secondary_views}, ${s1_right_views}}
-  lateral: ${merge:${common_views}, ${secondary_views}, ${s1_right_views}}
-  inlet: ${merge:${common_views}, ${secondary_views}, ${s1_right_views}}
-  outlet: ${merge:${common_views}, ${secondary_views}, ${s1_right_views}}
-  oblique_left: ${merge:${common_views}, ${secondary_views}, ${s1_right_views}}
-  oblique_right: ${merge:${common_views}, ${secondary_views}, ${s1_right_views}}
-  teardrop_left: ${merge:${common_views}, ${secondary_views}, ${s1_right_views}}
-  teardrop_right: ${merge:${common_views}, ${secondary_views}, ${s1_right_views}}
+_sacrum_acquisitions:
+  start: ${merge:${common_views}, ${start_views}, ${sacrum_views}}
+  ap: ${merge:${common_views}, ${secondary_views}, ${sacrum_views}}
+  lateral: ${merge:${common_views}, ${secondary_views}, ${sacrum_views}}
+  inlet: ${merge:${common_views}, ${secondary_views}, ${sacrum_views}}
+  outlet: ${merge:${common_views}, ${secondary_views}, ${sacrum_views}}
+  oblique_left: ${merge:${common_views}, ${secondary_views}, ${sacrum_views}}
+  oblique_right: ${merge:${common_views}, ${secondary_views}, ${sacrum_views}}
+  teardrop_left: ${merge:${common_views}, ${secondary_views}, ${sacrum_views}}
+  teardrop_right: ${merge:${common_views}, ${secondary_views}, ${sacrum_views}}
 
-_s1_acquisitions:
-  start: ${merge:${common_views}, ${start_views}, ${s1_views}}
-  ap: ${merge:${common_views}, ${secondary_views}, ${s1_views}}
-  lateral: ${merge:${common_views}, ${secondary_views}, ${s1_views}}
-  inlet: ${merge:${common_views}, ${secondary_views}, ${s1_views}}
-  outlet: ${merge:${common_views}, ${secondary_views}, ${s1_views}}
-  oblique_left: ${merge:${common_views}, ${secondary_views}, ${s1_views}}
-  oblique_right: ${merge:${common_views}, ${secondary_views}, ${s1_views}}
-  teardrop_left: ${merge:${common_views}, ${secondary_views}, ${s1_views}}
-  teardrop_right: ${merge:${common_views}, ${secondary_views}, ${s1_views}}
+_sacrum_screw_acquisitions:
+  start: ${merge:${common_views}, ${start_views}, ${sacrum_screw_views}}
+  ap: ${merge:${common_views}, ${secondary_views}, ${sacrum_screw_views}}
+  lateral: ${merge:${common_views}, ${secondary_views}, ${sacrum_screw_views}}
+  inlet: ${merge:${common_views}, ${secondary_views}, ${sacrum_screw_views}}
+  outlet: ${merge:${common_views}, ${secondary_views}, ${sacrum_screw_views}}
+  oblique_left: ${merge:${common_views}, ${secondary_views}, ${sacrum_screw_views}}
+  oblique_right: ${merge:${common_views}, ${secondary_views}, ${sacrum_screw_views}}
+  teardrop_left: ${merge:${common_views}, ${secondary_views}, ${sacrum_screw_views}}
+  teardrop_right: ${merge:${common_views}, ${secondary_views}, ${sacrum_screw_views}}
 
-_s2_acquisitions:
-  start: ${merge:${common_views}, ${start_views}, ${s2_views}}
-  ap: ${merge:${common_views}, ${secondary_views}, ${s2_views}}
-  lateral: ${merge:${common_views}, ${secondary_views}, ${s2_views}}
-  inlet: ${merge:${common_views}, ${secondary_views}, ${s2_views}}
-  outlet: ${merge:${common_views}, ${secondary_views}, ${s2_views}}
-  oblique_left: ${merge:${common_views}, ${secondary_views}, ${s2_views}}
-  oblique_right: ${merge:${common_views}, ${secondary_views}, ${s2_views}}
-  teardrop_left: ${merge:${common_views}, ${secondary_views}, ${s2_views}}
-  teardrop_right: ${merge:${common_views}, ${secondary_views}, ${s2_views}}
 
 acquisition:
   # task currently in
@@ -255,30 +259,30 @@ acquisition:
     position_wire: ${_ramus_right_acquisitions}
     insert_wire: ${_ramus_right_acquisitions}
   s1_left:
-    position_wire: ${_s1_left_acquisitions}
-    insert_wire: ${_s1_left_acquisitions}
+    position_wire: ${_sacrum_acquisitions}
+    insert_wire: ${_sacrum_acquisitions}
   s1_right:
-    position_wire: ${_s1_right_acquisitions}
-    insert_wire: ${_s1_right_acquisitions}
+    position_wire: ${_sacrum_acquisitions}
+    insert_wire: ${_sacrum_acquisitions}
   s1:
-    position_wire: ${_s1_acquisitions}
-    insert_wire: ${_s1_acquisitions}
+    position_wire: ${_sacrum_acquisitions}
+    insert_wire: ${_sacrum_acquisitions}
   s2:
-    position_wire: ${_s2_acquisitions}
-    insert_wire: ${_s2_acquisitions}
+    position_wire: ${_sacrum_acquisitions}
+    insert_wire: ${_sacrum_acquisitions}
   screw_s1_left:
-    insert_screw: ${_s1_left_acquisitions}
+    insert_screw: ${_sacrum_screw_acquisitions}
   screw_s1_right:
-    insert_screw: ${_s1_right_acquisitions}
+    insert_screw: ${_sacrum_screw_acquisitions}
   screw_s1:
-    insert_screw: ${_s1_acquisitions}
+    insert_screw: ${_sacrum_screw_acquisitions}
   screw_s2:
-    insert_screw: ${_s2_acquisitions}
+    insert_screw: ${_sacrum_screw_acquisitions}
   screw_ramus_left:
-    insert_screw: ${_ramus_left_acquisitions}
+    insert_screw: ${_ramus_left_screw_acquisitions}
   screw_ramus_right:
-    insert_screw: ${_ramus_right_acquisitions}
+    insert_screw: ${_ramus_right_screw_acquisitions}
   screw_teardrop_left:
-    insert_screw: ${_teardrop_left_acquisitions}
+    insert_screw: ${_teardrop_left_screw_acquisitions}
   screw_teardrop_right:
-    insert_screw: ${_teardrop_left_acquisitions}
+    insert_screw: ${_teardrop_right_screw_acquisitions}

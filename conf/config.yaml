@@ -60,6 +60,7 @@ sim:
     teardrop_left: 8
     teardrop_right: 8
 
+  max_procedure_length: 1000
   num_procedures: ${num_procedures}
   overwrite: ${overwrite}
   cache_dir: ${hydra:runtime.cwd}/cache/pelphix

@@ -30,7 +30,7 @@ import deepdrr
 import pelphix
 from pelphix.utils.onedrive_utils import OneDrive
 from pelphix.ssm import ssm_build
-from pelphix.sim import PelphixSim
+from pelphix.sims import PelphixSim
 from perphix.data import (
     PerphixSequenceDataset,
 )
@@ -132,11 +132,11 @@ def vis(cfg):
         frames = dataset.visualize_procedure(procedure_idx, show_annotations=cfg.show)
 
         # Repeat the last frame for a few seconds
-        last_frame = frames[-1].copy()
-        last_frames = []
-        for _ in range(20):
-            last_frames.append(last_frame.copy())
-        frames = np.concatenate([frames, last_frames], axis=0)
+        # last_frame = frames[-1].copy()
+        # last_frames = []
+        # for _ in range(20):
+        #     last_frames.append(last_frame.copy())
+        # frames = np.concatenate([frames, last_frames], axis=0)
 
         images_dir = Path(get_original_cwd()) / "images"
         output_path = images_dir / f"procedure_{procedure_idx:03d}.mp4"
