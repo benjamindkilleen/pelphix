@@ -85,6 +85,11 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
 
 ## TODO
 
+Emergency:
+
+- [ ] The wire isn't inserting, probablly because I'm checking it at the acquisition start and not
+  advancing it after. But going back would make it so the first insertion doesn't do anything.
+
 TODO before rebuttal:
 
 - [ ] Add view-invariant pretraining dataset.
@@ -109,6 +114,8 @@ TODO before rebuttal:
   - [X] Don't place the wire at start until no longer in fluoro hunting the desired view is achieved. Same with screw.
   - [ ] Optional: After wire placement, odds of going to corresponding screw placement should be higher.
   - [ ] "Correct" view might be randomly sampled, but tolerance should be smaller?
+  - [X] If we just determined the wire was positioned correctly, don't change the acquisition.
+  - [X] Decision to go to wire insertion needs to include likelihood of checking the other view instead. We're at the end of a
   - [X] Choose screw based on insertion fractions, not corridor length.
   - [X] For some reason, the last image with a given view is always "fluoro-hunting."
   - [X] Screw views should not include down-the-barrel (done, not run)

@@ -152,6 +152,24 @@ class FrameState(NamedTuple):
     frame: Frame
 
 
+def get_previous_activity(state: SimState) -> Optional[Activity]:
+    if state.previous is None:
+        return None
+    elif state.previous.activity in [Activity.end, Activity.start]:
+        return get_previous_activity(state.previous)
+    else:
+        return state.previous.activity
+
+
+def get_previous_acquisition(state: SimState) -> Optional[Acquisition]:
+    if state.previous is None:
+        return None
+    elif state.previous.acquisition in [Acquisition.end, Acquisition.start]:
+        return get_previous_acquisition(state.previous)
+    else:
+        return state.previous.acquisition
+
+
 class SimState:
     """The state of the simulation.
 
@@ -284,6 +302,8 @@ class SimState:
             transitions = dict((s, 1) for s in screws_possible)
             return Task(sample_transition(transitions))
         elif self.task in self.task_transitions:
+            log.warning(f"Remove hard-coded transitions for {self.task}!")
+            return Task.ramus_left
             transitions = self.task_transitions[self.task]
 
             # Set of screws for which wires have been done.
@@ -306,11 +326,21 @@ class SimState:
             # If the wire looks bad, then we need to go back to wire insertion
             return Activity.position_wire
         elif self.activity == Activity.position_wire and self.wire_looks_good:
-            return Activity.insert_wire
+            # Actually we should check the other view, unless it's been checked.
+            if np.random.uniform() < 0.3:
+                self.need_new_view = True
+                return Activity.position_wire
+            else:
+                return Activity.insert_wire
         elif self.activity == Activity.insert_wire and self.wire_looks_inserted:
             return Activity.end
         elif self.activity == Activity.insert_screw and self.screw_looks_inserted:
-            return Activity.end
+            if np.random.uniform() < 0.3:
+                # Sometimes, check from another view.
+                self.need_new_view = True
+                return Activity.insert_screw
+            else:
+                return Activity.end
         elif (
             self.task in self.activity_transitions
             and self.activity in self.activity_transitions[self.task]
@@ -345,18 +375,27 @@ class SimState:
             return Acquisition.end
         elif (
             self.activity == Activity.insert_wire
+            and get_previous_activity(self) == Activity.position_wire
+        ):
+            # If we are inserting the wire, and we just started inserting it,
+            # then we want to actually insert it, so don't change the view.
+            return get_previous_acquisition(self)
+        elif (
+            self.activity == Activity.insert_wire
             and self.wire_looks_good
             and self.wire_looks_inserted
         ):
+            # If the wire is being inserted, and it looks good, then we would want to change views to check it.
             return Acquisition.end
         elif self.activity == Activity.insert_screw and self.screw_looks_inserted:
+            # If the screw is being inserted, and it looks god, then we're done.
             return Acquisition.end
         elif (
             not self.need_new_view
             and not self.object_looks_good
             and self.acquisition != Acquisition.start
         ):
-            # If wire the previous acquisition looks good, then we'll just repeat it.
+            # If the previous acquisition looks good, then we'll just repeat it.
             return self.acquisition
         elif (
             self.task in self.acquisition_transitions
