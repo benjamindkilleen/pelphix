@@ -102,25 +102,28 @@ TODO before rebuttal:
   - [ ] Make a squite of more realistic K-wires, with threaded tips.
   - [ ] Include all the screws.
 - [ ] Fix sequence generation to be more realistic.
+  - [ ] On first wire insert, there appears to also be some wire positioning.
+  - [ ] New view isn't being sampled when the wire looks good.
+  - [ ] As soon as the wire is fully inserted, move to the next task. (done?)
+  - [ ] First "wire insert" should actually advance the wire.
+  - [ ] When screw is inserted, check it from two views.
+  - [ ] Make sampling more realistic for views/positions (fiddle with bounds, make lower bounds larger, more randomness)
+  - [ ] "Correct" view might be randomly sampled, but tolerance should be smaller?
+  - [ ] Fluoro-hunting should be less pronounced as procedure goes on.
+  - [ ] Optional: After wire placement, odds of going to corresponding screw placement should be higher.
   - [X] Remove `Step` from the Workflow State.
   - [X] Randomly sample task order. Allow screw insertion to be sampled at any time.
   - [X] Limit views for each task to ones actually used.
   - [X] Add missing views (IO, OO)
-  - [ ] Make sampling more realistic for views/positions (fiddle with bounds, make lower bounds larger, more randomness)
   - [X] Corridor segmentation should never vary, only the distance along it that wires/screws are inserted.
   - [X] Wire should always go the correct length along the corridor (whatever that is for the given corridor).
-  - [ ] As soon as the wire is fully inserted, move to the next task. (done?)
-  - [ ] When screw is inserted, check it from two views.
   - [X] Don't place the wire at start until no longer in fluoro hunting the desired view is achieved. Same with screw.
-  - [ ] Optional: After wire placement, odds of going to corresponding screw placement should be higher.
-  - [ ] "Correct" view might be randomly sampled, but tolerance should be smaller?
   - [X] If we just determined the wire was positioned correctly, don't change the acquisition.
   - [X] Decision to go to wire insertion needs to include likelihood of checking the other view instead. We're at the end of a
   - [X] Choose screw based on insertion fractions, not corridor length.
   - [X] For some reason, the last image with a given view is always "fluoro-hunting."
   - [X] Screw views should not include down-the-barrel (done, not run)
   - [X] Screw advancement should always include a stop with the tip at the bone.
-  - [ ] Fluoro-hunting should be less pronounced as procedure goes on.
 - [ ] Minor model changes
   - [ ] Pre-training step, with `(black, black, frame)` as input.
   - [ ] 3-frame input should be `(prev-prev, prev, current)`, with black for `prev-prev` and `prev` if it doesn't exist.

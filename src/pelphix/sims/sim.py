@@ -245,10 +245,10 @@ class PelphixSim(PelphixBase, Process):
         s1_right=0.7,
         s1=0.7,
         s2=0.7,
-        ramus_left=0.98,
-        ramus_right=0.98,
-        teardrop_left=0.98,
-        teardrop_right=0.98,
+        ramus_left=0.95,
+        ramus_right=0.95,
+        teardrop_left=0.95,
+        teardrop_right=0.95,
     )
 
     # Fraction of the annotaiton length that is the max for the screw.
@@ -257,8 +257,8 @@ class PelphixSim(PelphixBase, Process):
         s1_right=0.7,
         s1=0.7,
         s2=0.7,
-        ramus_left=0.98,
-        ramus_right=0.98,
+        ramus_left=0.95,
+        ramus_right=0.95,
         teardrop_left=0.65,
         teardrop_right=0.65,
     )
@@ -408,7 +408,7 @@ class PelphixSim(PelphixBase, Process):
         if state.task.is_wire():
             tip_index = index_from_world @ tool.tip_in_world
             progress = (tip_index - p_index).dot(q_index - p_index) / (q_index - p_index).normsqr()
-            return progress >= self.wire_insertion_fraction[state.task]
+            return progress >= self.wire_insertion_fraction[state.task] - 0.02
         else:
             # For the screw, want to stop actually when the base is at the startpoint.
             base_index = index_from_world @ tool.base_in_world  # screw base in index
@@ -553,11 +553,11 @@ class PelphixSim(PelphixBase, Process):
             return 0
 
         # For wires, sample less. But be at least 10% of the way through. Otherwise not really insertion.
-        if progress < 0.1:
-            new_progress = np.random.uniform(0.08, 1.5)
+        if progress < 0.05:
+            new_progress = np.random.uniform(0.05, 0.15)
         else:
             new_progress = np.clip(
-                np.random.uniform(progress + 0.1, progress + 0.3),
+                np.random.uniform(progress + 0.1, progress + 0.5),
                 0.1,
                 self.wire_insertion_fraction[state.task],
             )
@@ -860,12 +860,12 @@ class PelphixSim(PelphixBase, Process):
                 continue
             elif (
                 state.activity == Activity.insert_wire
-                and wire_placed[corridor_name]
-                and state.ready()
+                and state.get_previous_activity() == Activity.position_wire
             ):
-                # We only want to insert if we know that we're going to take an image.
-                # THis is a bit hacky.
+                # This is the first insert_wire image, so the wire hasn't been advanced yet.
+                # Advance it.
                 advancement = self.sample_wire_advancement(state, wire, corridor, device)
+                log.debug(f"Advancing wire by {advancement} (previous activity was positioning)")
                 wire.advance(advancement)
 
             if state.acquisition == Acquisition.start:
@@ -885,7 +885,6 @@ class PelphixSim(PelphixBase, Process):
                         corridor,
                         device,
                     )
-
                 continue
 
             # Need to sample the desired views for the current acquisitions deterministically.
@@ -946,7 +945,7 @@ class PelphixSim(PelphixBase, Process):
                             radius=5,
                         ),
                         geo.random.spherical_uniform(
-                            corridor.get_direction(), d_phi=math.radians(15)
+                            corridor.get_direction(), d_phi=FIFTEEN_DEGREES
                         ),
                     )
                     wire_placed[state.task] = True
@@ -1004,8 +1003,8 @@ class PelphixSim(PelphixBase, Process):
 
             running_frame_state = frame_state
 
-            frame_id += 1
             log.info(f"Acquired image {frame_id}.")
+            frame_id += 1
 
             if state.frame == Frame.fluoro_hunting:
                 # If we're in fluoro hunting, we need to sample a new view.
@@ -1015,18 +1014,23 @@ class PelphixSim(PelphixBase, Process):
 
             # Assess the wire position.
             if state.activity == Activity.position_wire:
-                # Position the wire and evaluate the position to determine if it looks good for the next state.
-                self.position_wire(
-                    wire=wire,
-                    state=state,
-                    seg_meshes=seg_meshes,
-                    corridor=corridor,
-                    device=device,
-                    skill_factor=skill_factor,
-                )
                 state.wire_looks_good = self.evaluate_wire_position(
                     wire, corridor, device, false_positive_rate=false_positive_rate
                 )
+                if state.wire_looks_good:
+                    # Set need_new_view? Nahhhh, should be fine just by setting end probability very low.
+                    pass
+                else:
+                    # If the wire doesn't look good, we need to reposition it.
+                    # Position the wire and evaluate the position to determine if it looks good for the next state.
+                    self.position_wire(
+                        wire=wire,
+                        state=state,
+                        seg_meshes=seg_meshes,
+                        corridor=corridor,
+                        device=device,
+                        skill_factor=skill_factor,
+                    )
 
             elif state.activity == Activity.insert_wire:
                 state.wire_looks_good = self.evaluate_wire_position(
@@ -1038,11 +1042,12 @@ class PelphixSim(PelphixBase, Process):
                 ):
                     # If the current view can actually assess the insertion of the wire
                     # Insert the wire and determine if it looks good for the next state.
-
                     state.wire_looks_inserted = self.evaluate_insertion(
                         state, wire, corridor, device
                     )
                     log.debug(f"Wire looks inserted: {state.wire_looks_inserted}")
+                    advancement = self.sample_wire_advancement(state, wire, corridor, device)
+                    wire.advance(advancement)
                 elif state.wire_looks_good:
                     # The wire looks good, but we need to sample a new acquisition with a different view.
                     state.need_new_view = True
@@ -1052,6 +1057,7 @@ class PelphixSim(PelphixBase, Process):
                 state.wire_looks_good = self.evaluate_wire_position(
                     wire, corridor, device, false_positive_rate=false_positive_rate
                 )
+                state.wire_looks_inserted = self.evaluate_insertion(state, wire, corridor, device)
                 state.screw_looks_inserted = self.evaluate_insertion(state, screw, corridor, device)
                 if (
                     state.wire_looks_good
@@ -1068,8 +1074,11 @@ class PelphixSim(PelphixBase, Process):
                     log.info("Need new view.")
                     continue
                 else:
-                    # The wire doesn't look good. Unknown what to do here.
-                    log.warning(f"Wire doesn't look good. Unknown what to do here. Continuing...")
+                    # The wire doesn't look good. Unknown what to do here. This is reached if the wire is in a bad position,
+                    # but we have already moved onto screw insertion. The next state should go to wire positioning.
+                    wire_placed[corridor_name] = False
+                    # Makes it so the next state is wire positioning for the current task.
+                    state.fix_wire = True
             else:
                 raise ValueError(f"Unknown activity: {state.activity}")
 
