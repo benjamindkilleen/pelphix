@@ -312,6 +312,10 @@ class Tool(deepdrr.Volume, ABC):
         Args:
             distance (float): The distance to move the tool forward.
         """
+        if distance == 0:
+            log.warning("Distance is 0, not moving tool.")
+            return
+
         self.align(
             self.tip_in_world,
             self.tip_in_world + (self.tip_in_world - self.base_in_world),

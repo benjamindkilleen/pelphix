@@ -88,11 +88,13 @@ def generate(cfg):
     for d in ["nifti", "TotalSegmentator", "TotalSegmentator_mesh", cfg.pelvis_annotations_dir]:
         onedrive.download(nmdid_dir / d, skip=cfg.skip_download)
 
+    sim_config = OmegaConf.to_container(cfg.sim)
+
     # Generate the images
-    pelphix_sim = PelphixSim(train=True, **cfg.sim)
+    pelphix_sim = PelphixSim(train=True, **sim_config)
     pelphix_sim.generate()
 
-    pelphix_val = PelphixSim(train=False, **cfg.sim)
+    pelphix_val = PelphixSim(train=False, **sim_config)
     pelphix_val.generate()
 
 

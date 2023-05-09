@@ -85,10 +85,7 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
 
 ## TODO
 
-Emergency:
-
-- [ ] The wire isn't inserting, probablly because I'm checking it at the acquisition start and not
-  advancing it after. But going back would make it so the first insertion doesn't do anything.
+Current bug:
 
 TODO before rebuttal:
 
@@ -102,8 +99,8 @@ TODO before rebuttal:
   - [ ] Make a squite of more realistic K-wires, with threaded tips.
   - [ ] Include all the screws.
 - [ ] Fix sequence generation to be more realistic.
-  - [ ] On first wire insert, there appears to also be some wire positioning.
-  - [ ] New view isn't being sampled when the wire looks good.
+  - [ ] Screw insertion is looping without any advancement.
+  - [ ] New view isn't being sampled when the wire looks good, especially in the middle of insertion.
   - [ ] As soon as the wire is fully inserted, move to the next task. (done?)
   - [ ] First "wire insert" should actually advance the wire.
   - [ ] When screw is inserted, check it from two views.
@@ -111,6 +108,8 @@ TODO before rebuttal:
   - [ ] "Correct" view might be randomly sampled, but tolerance should be smaller?
   - [ ] Fluoro-hunting should be less pronounced as procedure goes on.
   - [ ] Optional: After wire placement, odds of going to corresponding screw placement should be higher.
+  - [X] Initial wire positioning is way off, not within 15 degrees of correct.
+  - [X] On first wire insert, there appears to also be some wire positioning.
   - [X] Remove `Step` from the Workflow State.
   - [X] Randomly sample task order. Allow screw insertion to be sampled at any time.
   - [X] Limit views for each task to ones actually used.

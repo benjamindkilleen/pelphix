@@ -96,7 +96,7 @@ activity:
 common_views: {}
 start_views: {}
 secondary_views:
-  end: 2 # should be 0.5, but debugging withdrawal.
+  end: 0.5 # should be 0.5, but debugging withdrawal.
 
 # Unique views for each corridor
 teardrop_left_views:

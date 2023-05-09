@@ -50,20 +50,29 @@ def sample_transition(
         str: The chosen
     """
     choices = list(transitions.keys())
-    p = np.array(list(transitions.values()))
+    p = np.array(list(transitions.values()), dtype=np.float32)
+
+    log.debug(f"Sampling from {choices} with initial weights {p}")
 
     for i, c in enumerate(choices):
+        log.debug(f"Choice {c}:")
         if c in weights:
+            log.debug(f"  Weight: {weights[c]}")
             p[i] *= weights[c]
         if c in exclude:
+            log.debug(f"  Excluding {c}")
             p[i] = 0
 
+    log.debug(f"Sampling from {choices} with weights {p}")
+
     if np.sum(p) == 0:
+        log.warning(f"No valid choices left. Returning 'end'.")
         return "end"
 
+    p = p / np.sum(p)
     log.debug(f"Sampling from {choices} with probabilities {p}")
 
-    return np.random.choice(choices, p=normalize(p))
+    return np.random.choice(choices, p=p)
 
 
 # Each level workflow state has a record of which things have been visited before for that
@@ -232,7 +241,12 @@ class SimState:
         # If the frame or acquisition is in end, then the previous state was an acquisition, which
         # means that it should know whether the wire looks good.
         # Otherwise, these values will be set externally by the assessment.
-        if self.frame == Frame.end or self.acquisition == Acquisition.end:
+        # Could be moving onto new wire, or going to the screw for the same wire...
+        if (
+            self.frame == Frame.end
+            or self.acquisition == Acquisition.end
+            or self.activity == Activity.end
+        ):
             assert self.previous is not None
             self.wire_looks_good = self.previous.wire_looks_good
             self.wire_looks_inserted = self.previous.wire_looks_inserted
@@ -319,20 +333,11 @@ class SimState:
             log.debug(
                 f"Wire looks good while positioning, should either check other view or insert."
             )
-            if np.random.uniform() < 0.3:
-                self.need_new_view = True
-                return Activity.position_wire
-            else:
-                return Activity.insert_wire
+            return Activity.insert_wire
         elif self.activity == Activity.insert_wire and self.wire_looks_inserted:
             return Activity.end
         elif self.activity == Activity.insert_screw and self.screw_looks_inserted:
-            if np.random.uniform() < 0.3:
-                # Sometimes, check from another view.
-                self.need_new_view = True
-                return Activity.insert_screw
-            else:
-                return Activity.end
+            return Activity.end
         elif (
             self.task in self.activity_transitions
             and self.activity in self.activity_transitions[self.task]
@@ -364,10 +369,13 @@ class SimState:
             # If we're not positioning the wire, then we need to go back to positioning the wire.
             # Therefore end the current acquisition. This causes a new activity to be sampled (which
             # will inherit wire_looks_good).
+            log.debug(f"Wire looks bad, ending acquisition from {self.acquisition}")
+            self.fix_wire = True
             return Acquisition.end
         elif (
             self.activity == Activity.insert_wire
             and self.get_previous_activity() == Activity.position_wire
+            and self.acquisition == Acquisition.start
         ):
             # If we are inserting the wire, and we just started inserting it,
             # then we want to actually insert it, so don't change the view.
@@ -381,6 +389,7 @@ class SimState:
         ):
             # If the wire is being inserted, and it looks good, then we would want to change views to check it.
             log.debug(f"Wire looks good, ending acquisition from {self.acquisition}")
+            self.need_new_view = True
             return Acquisition.end
         elif self.activity == Activity.insert_screw and self.screw_looks_inserted:
             # If the screw is being inserted, and it looks god, then we're done.
@@ -415,6 +424,9 @@ class SimState:
                 weights = dict()
             else:
                 weights = dict((k, 1 / (v + 1)) for k, v in counter.items())
+            log.debug(
+                f"Sampling acquisition from {transitions} with weights {weights}, excluding {exclude}"
+            )
             return Acquisition(sample_transition(transitions, exclude=exclude, weights=weights))
         else:
             log.critical(
@@ -454,15 +466,18 @@ class SimState:
         """
         # log.debug(
         #     f"Sampling next state from {self} with\n"
-        #     f"view_looks_good={self.view_looks_good},\n"
-        #     f"wire_looks_good={self.wire_looks_good},\n"
-        #     f"wire_looks_inserted={self.wire_looks_inserted}\n"
-        #     f"screw_looks_inserted={self.screw_looks_inserted}..."
+        #     f"\tview_looks_good={self.view_looks_good},\n"
+        #     f"\twire_looks_good={self.wire_looks_good},\n"
+        #     f"\twire_looks_inserted={self.wire_looks_inserted}\n"
+        #     f"\tscrew_looks_inserted={self.screw_looks_inserted}\n"
+        #     f"\tfix_wire={self.fix_wire}\n"
         # )
+        log.debug(f"sampling from: {self}\n\t{self.acquisition_counter}")
 
         if self.fix_wire and self.task not in [Task.start, Task.end]:
             # Special case where we need to go back to positioning for the current wire.
-            return SimState(
+            log.debug(f"Fixing wire, going back to positioning wire from {self}")
+            state = SimState(
                 task=self.task.get_wire(),
                 activity=Activity.position_wire,
                 acquisition=Acquisition.start,
@@ -477,7 +492,7 @@ class SimState:
         # Sample the task.
         elif self.task == Task.end:
             # If the task is at end, then the procedure is over. No recursive call.
-            return SimState(
+            state = SimState(
                 task=Task.end,
                 activity=Activity.end,
                 acquisition=Acquisition.end,
@@ -565,7 +580,7 @@ class SimState:
         elif self.acquisition == Acquisition.start:
             # If the acquisition is not at end, then sample a new acquisition.
             acquisition = self.sample_acquisition()
-            log.debug(f"Sampling new acquisition: {acquisition} from {self.acquisition}")
+            log.debug(f"Sampled new acquisition: {acquisition} from {self.acquisition}")
             state = SimState(
                 task=self.task,
                 activity=self.activity,
@@ -673,6 +688,15 @@ class SimState:
             return self.previous.get_previous_acquisition()
         else:
             return self.previous.acquisition
+
+    def get_previous_frame(self) -> Frame:
+        """Get the previous frame."""
+        if self.previous is None:
+            return Frame.start
+        elif self.previous.frame in ["start", "end"]:
+            return self.previous.get_previous_frame()
+        else:
+            return self.previous.frame
 
     def ready(self) -> bool:
         """Whether the state is ready for an image."""

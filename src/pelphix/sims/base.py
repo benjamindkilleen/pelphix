@@ -1,13 +1,7 @@
-import shutil
 from typing import List, Optional, Tuple, Type, Union, Dict, Any
 from pathlib import Path
 import datetime
-import os
-import torch
 
-import copy
-import base64
-import json
 from pycocotools import mask as mask_utils
 from rich.progress import track
 from gpustat import print_gpustat
@@ -17,23 +11,21 @@ from deepdrr import geo, Volume
 from deepdrr.device import SimpleDevice
 from deepdrr.utils import data_utils, image_utils
 from deepdrr import Projector
-import re
-import logging
 import numpy as np
 import math
 import time
-import matplotlib.pyplot as plt
-import multiprocessing as mp
-from multiprocessing import Queue, Process
-from queue import Empty
-import pyvista as pv
+from multiprocessing import Process
+import logging
 
 from perphix.data import PerphixBase
+from perphix.utils import vis_utils
 
 from .state import Task, Activity, Acquisition, Frame, SimState, FrameState
-from ..tools import Tool, Screw, get_screw, get_screw_choices
 from ..shapes import Cylinder, Mesh
-from ..utils import coco_utils, save_json, load_json
+from ..utils import coco_utils
+
+
+log = logging.getLogger(__name__)
 
 
 DEGREE_SIGN = "\N{DEGREE SIGN}"
@@ -348,10 +340,8 @@ class PelphixBase(PerphixBase, Process):
             image_id: The image id.
             case_name: The case name for the CT.
         """
-
         image = projector()
         index_from_world = device.index_from_world
-        image_utils.save(image_path, image)
 
         # # Plot the wire and screw.
         # plotter = pv.Plotter(off_screen=True, window_size=(1536, 2048))
@@ -479,3 +469,12 @@ class PelphixBase(PerphixBase, Process):
                 "track_id": 1000 * cat_id,
             }
             annotation["annotations"].append(ann)
+
+        # For debugging
+        corr = corridors["ramus_left"]
+        startpoint = index_from_world @ corr.startpoint
+        endpoint = index_from_world @ corr.endpoint
+        image = vis_utils.draw_keypoints(image, np.array([startpoint, endpoint]), ["start", "end"])
+
+        # Save the image
+        image_utils.save(image_path, image)

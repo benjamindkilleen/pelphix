@@ -40,6 +40,15 @@ n_points: 5000
 pelvis_n_points: 10000
 n_components: 40
 
+
+_device_translation_min: 5
+_device_translation_max: 100
+_device_angulation_max: 45
+_wire_translation_min: 5
+_wire_translation_max: 10
+_wire_angulation_max: 45
+
+
 # Generating the Pelphix dataset.
 sim:
   root: ${onedrive_dir}/datasets/Pelphix
@@ -50,20 +59,12 @@ sim:
   image_size:
     - ${image_size}
     - ${image_size}
-  corridor_radii:
-    s1_left: 5
-    s1_right: 5
-    s1: 5
-    s2: 5
-    ramus_left: 5
-    ramus_right: 5
-    teardrop_left: 8
-    teardrop_right: 8
-
   max_procedure_length: 1000
   num_procedures: ${num_procedures}
   overwrite: ${overwrite}
   cache_dir: ${hydra:runtime.cwd}/cache/pelphix
+  num_workers: ${num_workers}
+
   view_tolerance:
     # in degrees.
     ap: 3
@@ -74,7 +75,93 @@ sim:
     oblique_right: 3
     teardrop_left: 2
     teardrop_right: 2
-  num_workers: ${num_workers}
+  corridor_radii:
+    s1_left: 5
+    s1_right: 5
+    s1: 5
+    s2: 5
+    ramus_left: 3
+    ramus_right: 3
+    teardrop_left: 8
+    teardrop_right: 8
+  random_translation_bounds:
+    min:
+      device:
+        ap: ${_device_translation_min}
+        lateral: ${_device_translation_min}
+        inlet: ${_device_translation_min}
+        outlet: ${_device_translation_min}
+        oblique_left: ${_device_translation_min}
+        oblique_right: ${_device_translation_min}
+        teardrop_left: ${_device_translation_min}
+        teardrop_right: ${_device_translation_min}
+      wire:
+        ap: ${_wire_translation_min}
+        lateral: ${_wire_translation_min}
+        inlet: ${_wire_translation_min}
+        outlet: ${_wire_translation_min}
+        oblique_left: ${_wire_translation_min}
+        oblique_right: ${_wire_translation_min}
+        teardrop_left: ${_wire_translation_min}
+        teardrop_right: ${_wire_translation_min}
+    max:
+      device:
+        ap: ${_device_translation_max}
+        lateral: ${_device_translation_max}
+        inlet: ${_device_translation_max}
+        outlet: ${_device_translation_max}
+        oblique_left: ${_device_translation_max}
+        oblique_right: ${_device_translation_max}
+        teardrop_left: ${_device_translation_max}
+        teardrop_right: ${_device_translation_max}
+      wire:
+        ap: ${_wire_translation_max}
+        lateral: ${_wire_translation_max}
+        inlet: ${_wire_translation_max}
+        outlet: ${_wire_translation_max}
+        oblique_left: ${_wire_translation_max}
+        oblique_right: ${_wire_translation_max}
+        teardrop_left: ${_wire_translation_max}
+        teardrop_right: ${_wire_translation_max}
+  random_angulation_bounds:
+    min:
+      device:
+        ap: 5
+        lateral: 8
+        inlet: 5
+        outlet: 7
+        oblique_left: 5
+        oblique_right: 5
+        teardrop_left: 5
+        teardrop_right: 5
+      wire:
+        ap: 5
+        lateral: 5
+        inlet: 5
+        outlet: 5
+        oblique_left: 5
+        oblique_right: 5
+        teardrop_left: 5
+        teardrop_right: 5
+    max:
+      device:
+        ap: ${_device_angulation_max}
+        lateral: ${_device_angulation_max}
+        inlet: ${_device_angulation_max}
+        outlet: ${_device_angulation_max}
+        oblique_left: ${_device_angulation_max}
+        oblique_right: ${_device_angulation_max}
+        teardrop_left: ${_device_angulation_max}
+        teardrop_right: ${_device_angulation_max}
+      wire:
+        ap: ${_wire_angulation_max}
+        lateral: ${_wire_angulation_max}
+        inlet: ${_wire_angulation_max}
+        outlet: ${_wire_angulation_max}
+        oblique_left: ${_wire_angulation_max}
+        oblique_right: ${_wire_angulation_max}
+        teardrop_left: ${_wire_angulation_max}
+        teardrop_right: ${_wire_angulation_max}
 
 # Other experimental variables
 overwrite: False
