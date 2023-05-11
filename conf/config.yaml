@@ -65,16 +65,25 @@ sim:
   cache_dir: ${hydra:runtime.cwd}/cache/pelphix
   num_workers: ${num_workers}
 
+  skill_factor: [0.6, 0.8]
   view_tolerance:
     # in degrees.
-    ap: 3
-    lateral: 5
-    inlet: 3
-    outlet: 5
-    oblique_left: 3
-    oblique_right: 3
-    teardrop_left: 2
-    teardrop_right: 2
+    # ap: 3
+    # lateral: 5
+    # inlet: 3
+    # outlet: 5
+    # oblique_left: 3
+    # oblique_right: 3
+    # teardrop_left: 2
+    # teardrop_right: 2
+    ap: 2
+    lateral: 2
+    inlet: 2
+    outlet: 2
+    oblique_left: 2
+    oblique_right: 2
+    teardrop_left: 1
+    teardrop_right: 1
   corridor_radii:
     s1_left: 5
     s1_right: 5
@@ -126,14 +135,14 @@ sim:
   random_angulation_bounds:
     min:
       device:
-        ap: 5
-        lateral: 8
-        inlet: 5
-        outlet: 7
-        oblique_left: 5
-        oblique_right: 5
-        teardrop_left: 5
-        teardrop_right: 5
+        ap: 2
+        lateral: 2
+        inlet: 2
+        outlet: 2
+        oblique_left: 2
+        oblique_right: 2
+        teardrop_left: 2
+        teardrop_right: 2
       wire:
         ap: 5
         lateral: 5

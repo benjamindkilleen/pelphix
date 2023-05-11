@@ -56,17 +56,7 @@ SIXTY_DEGREES = math.radians(60)
 class PelphixSim(PelphixBase, Process):
     """Simulator for generating sequence data."""
 
-    # For wire adjustments
-    # MAX_ANGLE_BOUND = math.radians(30)
-    # MIN_ANGLE_BOUND = math.radians(3)  # smaller than this is just random
-    # MAX_TIP_BOUND = 10
-    # MIN_TIP_BOUND = 2
-
-    # # For view adjustments
-    # MAX_VIEW_ANGLE_BOUND = math.radians(45)
-    # MIN_VIEW_ANGLE_BOUND = math.radians(3)  # smaller than this is just random
-    # MAX_VIEW_POSITION_BOUND = 100
-    # MIN_VIEW_POSITION_BOUND = 5
+    EXCLUDE_CASES = {"case-103485"}
 
     def __init__(
         self,
@@ -83,6 +73,7 @@ class PelphixSim(PelphixBase, Process):
         num_procedures: int = 10000,
         overwrite: bool = False,
         cache_dir: Optional[Path] = None,
+        skill_factor: tuple[float, float] = (0.5, 1.0),
         view_tolerance: dict[str, float] = dict(),
         random_translation_bounds: dict[str, float] = dict(),
         random_angulation_bounds: dict[str, float] = dict(),
@@ -153,6 +144,7 @@ class PelphixSim(PelphixBase, Process):
         self.job_queue = job_queue
         self.finished_queue = finished_queue
         self.corridor_radii = corridor_radii
+        self.skill_factor = tuple(skill_factor)
         self.view_tolerance = deepdrr.utils.radians(dict(view_tolerance), degrees=True)
         self.random_translation_bounds = dict(random_translation_bounds)
         self.random_angulation_bounds = deepdrr.utils.radians(
@@ -168,6 +160,7 @@ class PelphixSim(PelphixBase, Process):
                 case.name
                 for case in self.pelvis_annotations_dir.glob("case-*/")
                 if re.match(self.CASE_PATTERN, case.name) is not None
+                and case.name not in self.EXCLUDE_CASES
             ]
         )
         if self.train:
@@ -265,12 +258,20 @@ class PelphixSim(PelphixBase, Process):
         # If the position is good, adjust the angle.
         # skill factor increases for angle (more skill needed)
         # angular_skill_factor = 1 - (1 - skill_factor) * 0.5
-        angular_skill_factor = skill_factor
+        log.debug(f"Acquisition counter for {view_name}: {state.acquisition_counter[view_name]}")
+        if state.acquisition_counter[view_name] > 1:
+            log.debug("Acquisition counter > 2, reducing angular skill factor")
+            angular_skill_factor = skill_factor * 0.2
+        else:
+            angular_skill_factor = skill_factor
         angle = current_view.angle(desired_view)
         angle_bound = np.clip(
             angular_skill_factor * angle,
             self.random_angulation_bounds["min"]["device"][view_name],
             self.random_angulation_bounds["max"]["device"][view_name],
+        )
+        log.debug(
+            f"Sampling next view within {bound:.2f}mm, {math.degrees(angle_bound):.1f}{DEGREE_SIGN}"
         )
         n = geo.random.spherical_uniform(center=desired_view.n, d_phi=angle_bound)
         return geo.ray(p, n)
@@ -766,11 +767,11 @@ class PelphixSim(PelphixBase, Process):
         world_from_APP = self.get_APP(pelvis_keypoints=pelvis_landmarks)
 
         # log.warning(f"TODO: remove this hard-coded false positive rate.")
-        false_positive_rate = np.random.uniform(0.05, 0.2)
+        false_positive_rate = np.random.uniform(0.2, 0.3)
 
         # sample the skill factor
         # smaller skill factor is more skilled
-        skill_factor = np.random.uniform(0.2, 0.5)  # .6, .8
+        skill_factor = np.random.uniform(*self.skill_factor)  # .6, .8
         log.info(f"Sampling skill factor: {skill_factor}")
 
         # Sample the device parameters randomly.
@@ -913,6 +914,9 @@ class PelphixSim(PelphixBase, Process):
                 advancement = self.sample_wire_advancement(state, wire, corridor, device)
                 log.debug(f"Advancing wire by {advancement} (previous activity was positioning)")
                 wire.advance(advancement)
+                if np.random.rand() < 0.5 and (wire.tip_in_world - corridor.startpoint).norm() < 50:
+                    # 50% chance of switching views when the wire is close to the startpoint.
+                    state.need_new_view = True
 
             if state.acquisition == Acquisition.start:
                 # Start of the activity.
@@ -1113,6 +1117,13 @@ class PelphixSim(PelphixBase, Process):
                     log.debug(f"Wire looks inserted: {state.wire_looks_inserted}")
                     advancement = self.sample_wire_advancement(state, wire, corridor, device)
                     wire.advance(advancement)
+                    if (
+                        np.random.rand() < 0.5
+                        and (wire.tip_in_world - corridor.startpoint).norm() < 50
+                    ):
+                        # 50% chance of switching views when the wire is close to the startpoint.
+                        state.need_new_view = True
+
                 elif state.wire_looks_good:
                     # The wire looks good, but we need to sample a new acquisition with a different view.
                     state.need_new_view = True

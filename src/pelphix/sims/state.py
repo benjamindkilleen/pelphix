@@ -227,6 +227,13 @@ class SimState:
         self.acquisition_counter = Counter(acquisition_counter)
         self.previous = previous
 
+        if previous is None:
+            self.n = 0
+        elif self.ready():
+            self.n = previous.n + 1
+        else:
+            self.n = previous.n
+
         # view_looks_good may be updated externally. If the frame is an assessment frame, then
         # view_looks_good is always True.
         self.view_looks_good = self.frame in {Frame.assessment, Frame.end}

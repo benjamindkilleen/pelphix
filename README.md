@@ -98,16 +98,19 @@ TODO before rebuttal:
   - [ ] Add Keypoints to the tools, just the tip and base.
   - [ ] Make a squite of more realistic K-wires, with threaded tips.
   - [ ] Include all the screws.
+
 - [ ] Fix sequence generation to be more realistic.
-  - [ ] Screw insertion is looping without any advancement.
+  - [ ] Wire is being inserted while in the position_wire mode. Probably because we are continuing after wire insertion without taking an image.
   - [ ] New view isn't being sampled when the wire looks good, especially in the middle of insertion.
-  - [ ] As soon as the wire is fully inserted, move to the next task. (done?)
-  - [ ] First "wire insert" should actually advance the wire.
-  - [ ] When screw is inserted, check it from two views.
-  - [ ] Make sampling more realistic for views/positions (fiddle with bounds, make lower bounds larger, more randomness)
-  - [ ] "Correct" view might be randomly sampled, but tolerance should be smaller?
+  - [ ] When screw is inserted, check it from two views?
   - [ ] Fluoro-hunting should be less pronounced as procedure goes on.
   - [ ] Optional: After wire placement, odds of going to corresponding screw placement should be higher.
+  - [ ] Optional: "Correct" view might be randomly sampled.
+  - [ ] Future work: Fluoro-hunting makes more sense as an activity.
+  - [X] Make sampling more realistic for views/positions (fiddle with bounds, make lower bounds larger, more randomness)
+  - [X] First "wire insert" should actually advance the wire.
+  - [X] As soon as the wire is fully inserted, move to the next task. (done?)
+  - [X] Screw insertion is looping without any advancement.
   - [X] Initial wire positioning is way off, not within 15 degrees of correct.
   - [X] On first wire insert, there appears to also be some wire positioning.
   - [X] Remove `Step` from the Workflow State.
