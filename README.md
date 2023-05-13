@@ -83,6 +83,11 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
 
 ![results](images/liverpool_000000000.png)
 
+## Known Issues
+
+If an unsuitable trajectory is observed during wire insertion, the state will return to wire
+positioning before the wire is actually withdrawn, during which fluoro-hunting may occur.
+
 ## TODO
 
 Current bug:
@@ -100,13 +105,13 @@ TODO before rebuttal:
   - [ ] Include all the screws.
 
 - [ ] Fix sequence generation to be more realistic.
-  - [ ] Wire is being inserted while in the position_wire mode. Probably because we are continuing after wire insertion without taking an image.
-  - [ ] New view isn't being sampled when the wire looks good, especially in the middle of insertion.
   - [ ] When screw is inserted, check it from two views?
-  - [ ] Fluoro-hunting should be less pronounced as procedure goes on.
   - [ ] Optional: After wire placement, odds of going to corresponding screw placement should be higher.
   - [ ] Optional: "Correct" view might be randomly sampled.
-  - [ ] Future work: Fluoro-hunting makes more sense as an activity.
+  - [ ] Future work: Fluoro-hunting makes more sense as an activity. This also requires non-hierarchical state machine.
+  - [X] Wire is being inserted while in the position_wire mode. Probably because we are continuing after wire insertion without taking an image.
+  - [X] Fluoro-hunting should be less pronounced as procedure goes on.
+  - [X] New view isn't being sampled when the wire looks good, especially in the middle of insertion.
   - [X] Make sampling more realistic for views/positions (fiddle with bounds, make lower bounds larger, more randomness)
   - [X] First "wire insert" should actually advance the wire.
   - [X] As soon as the wire is fully inserted, move to the next task. (done?)

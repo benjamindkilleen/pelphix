@@ -541,7 +541,6 @@ class PelphixSim(PelphixBase, Process):
             sign = sign / abs(sign)
 
             # log.warning(f"Not rotating by second random amount, for debugging")
-            # rotvec = sign * wire_to_corridor_angle * principle_ray.hat()
             rotvec = (
                 sign * wire_to_corridor_angle + new_wire_to_corridor_angle
             ) * principle_ray.hat()
@@ -769,16 +768,16 @@ class PelphixSim(PelphixBase, Process):
         world_from_APP = self.get_APP(pelvis_keypoints=pelvis_landmarks)
 
         # log.warning(f"TODO: remove this hard-coded false positive rate.")
-        false_positive_rate = np.random.uniform(0.2, 0.3)
+        false_positive_rate = np.random.uniform(0.05, 0.15)
 
         # sample the skill factor
         # smaller skill factor is more skilled
-        # skill_factor = np.random.uniform(*self.skill_factor)  # .6, .8
-        view_skill_factor = np.random.uniform(*self.view_skill_factor)  # .6, .8
+        skill_factor = np.random.uniform(*self.skill_factor)
+        view_skill_factor = np.random.uniform(*self.view_skill_factor)
         # log.info(f"Sampling skill factor: {skill_factor}")
-        log.warning(f"TODO: remove this hard-coded skill factor.")
-        skill_factor = 0.1
-        view_skill_factor = 0.8
+        # log.warning(f"TODO: remove this hard-coded skill factor.")
+        # skill_factor = 0.1
+        # view_skill_factor = 0.8
 
         # Sample the device parameters randomly.
         device = self.sample_device()
@@ -799,7 +798,7 @@ class PelphixSim(PelphixBase, Process):
 
         # Sample the procedure.
         log.warning(f"TODO: remove this hard-coded procedure length.")
-        max_corridors = 1
+        max_corridors = len(corridors)
         # max_corridors = np.random.randint(min(len(corridors), 4), len(corridors) + 1)
         log.debug(f"Sampling {max_corridors} corridors.")
         log.info(f"Sampling {max_corridors} corridors.")
@@ -835,8 +834,6 @@ class PelphixSim(PelphixBase, Process):
             wire_placed[name] = False
             screw_placed[name] = False
 
-        log.warning(f"TODO: remove this hard-coded intensity upper bound.")
-        # intensity_upper_bound = 3
         intensity_upper_bound = np.random.uniform(2, 8)
         projector = Projector(
             [ct, *wires.values(), *screws.values()],
@@ -920,9 +917,6 @@ class PelphixSim(PelphixBase, Process):
                 advancement = self.sample_wire_advancement(state, wire, corridor, device)
                 log.debug(f"Advancing wire by {advancement} (previous activity was positioning)")
                 wire.advance(advancement)
-                if np.random.rand() < 0.5 and (wire.tip_in_world - corridor.startpoint).norm() < 50:
-                    # 50% chance of switching views when the wire is close to the startpoint.
-                    state.need_new_view = True
 
             # Pre-image assessments, basically of the previous image.
             if state.acquisition == Acquisition.start:
@@ -1015,7 +1009,6 @@ class PelphixSim(PelphixBase, Process):
                 ):
                     # Start of a wire task, after a view has been achieved, but a wire has not yet been placed. Sample the initial wire position.
                     # TODO: only do this if the view looks good. Sampling the initial wire position shouldn't be done here.
-                    # log.warning(f"remove hard-coded initial placement")
                     log.debug(f"Sampling initial wire position for {corridor_name}")
                     wire.orient(
                         geo.random.normal(
@@ -1024,7 +1017,6 @@ class PelphixSim(PelphixBase, Process):
                             scale=4,
                             radius=10,
                         ),
-                        # corridor.get_direction(),
                         geo.random.spherical_uniform(
                             corridor.get_direction(), d_phi=FIFTEEN_DEGREES
                         ),
@@ -1152,7 +1144,7 @@ class PelphixSim(PelphixBase, Process):
                         # 50% chance of switching views when the wire is close to the startpoint.
                         state.need_new_view = True
 
-                elif state.wire_looks_good:
+                elif state.wire_looks_good and wire_placed[corridor_name]:
                     # The wire looks good, but we need to sample a new acquisition with a different view.
                     state.need_new_view = True
                     log.info("Need new view.")

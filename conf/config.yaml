@@ -44,8 +44,8 @@ n_components: 40
 _device_translation_min: 5
 _device_translation_max: 100
 _device_angulation_max: 45
-_wire_translation_min: 5
-_wire_translation_max: 10
+_wire_translation_min: 2
+_wire_translation_max: 15
 _wire_angulation_max: 45
 
 
@@ -65,7 +65,7 @@ sim:
   cache_dir: ${hydra:runtime.cwd}/cache/pelphix
   num_workers: ${num_workers}
 
-  skill_factor: [0.2, 0.4]
+  skill_factor: [0.1, 0.3]
   view_skill_factor: [0.6, 0.8]
   view_tolerance:
     # in degrees.
@@ -181,7 +181,7 @@ gpus: 1
 # download: True
 # augment: True
 eval_only: False
-image_size: 384
+image_size: 224 # 384
 onedrive:
   syncdir: ${onedrive_dir}
 

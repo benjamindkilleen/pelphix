@@ -302,8 +302,6 @@ class SimState:
             transitions = dict((s, 1) for s in screws_possible)
             return Task(sample_transition(transitions))
         elif self.task in self.task_transitions:
-            log.warning(f"Remove hard-coded transitions for {self.task}!")
-            return Task.ramus_left
             transitions = self.task_transitions[self.task]
 
             # Set of screws for which wires have been done.
@@ -328,9 +326,6 @@ class SimState:
             return Activity.position_wire
         elif self.activity == Activity.position_wire and self.wire_looks_good:
             # Actually we should check the other view, unless it's been checked.
-            log.debug(
-                f"Wire looks good while positioning, should either check other view or insert."
-            )
             return Activity.insert_wire
         elif self.activity == Activity.insert_wire and self.wire_looks_inserted:
             return Activity.end

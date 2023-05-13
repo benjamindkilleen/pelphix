@@ -62,6 +62,7 @@ class PelphixBase(PerphixBase, Process):
         overwrite: bool = False,
         cache_dir: Optional[Union[str, Path]] = None,
     ):
+        super().__init__()
         self.root = Path(root).expanduser()
         self.nmdid_root = Path(nmdid_root).expanduser()
         self.pelvis_annotations_dir = Path(pelvis_annotations_dir).expanduser()
@@ -471,10 +472,10 @@ class PelphixBase(PerphixBase, Process):
             annotation["annotations"].append(ann)
 
         # For debugging
-        corr = corridors["ramus_left"]
-        startpoint = index_from_world @ corr.startpoint
-        endpoint = index_from_world @ corr.endpoint
-        image = vis_utils.draw_keypoints(image, np.array([startpoint, endpoint]), ["start", "end"])
+        # corr = corridors["ramus_left"]
+        # startpoint = index_from_world @ corr.startpoint
+        # endpoint = index_from_world @ corr.endpoint
+        # image = vis_utils.draw_keypoints(image, np.array([startpoint, endpoint]), ["start", "end"])
 
         # Save the image
         image_utils.save(image_path, image)
