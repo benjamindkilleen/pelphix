@@ -929,9 +929,23 @@ class PelphixSim(PelphixBase, Process):
                 # TODO: I think here just evaluate whether the wire/screw looks good. This is just evaluating the previous image, since we are continuing directly after
 
                 # So if the wire does not look good, and we're in insertion, it will go back to
-                # positioning, even though it's about to start a new acquisition.
-                # We only want to change to positioning when the wire is retracted.
-                # TODO: figure out if this is a big deal, or if we can correct for it.
+                # positioning, even though it's about to start a new acquisition, so it will be
+                # about to go to fluoro-hunting, potentially. Then in the state machine, when
+                # sampling an activity... We only want to change to positioning when the wire is
+                # retracted. TODO: figure out if this is a big deal, or if we can correct for it. So
+                # the issue is if the activity is not evaluated here to be good, then it will cause
+                # the state machine to go back to positioning, even though it's about to start a new
+                # acquisition. BUT if it's in insertion, and it goes to fluoro-hunting, then it will
+                # go back to positioning as soon as a bad wire is detected. One solution is that
+                # wires always look good if we're fluoro-hunting.
+
+                # Actual solution: fluoro hunting is an activity. When you go into fluoro-hunting,
+                # it necessessitates a new acquisition, so that makes sense. This will change a lot
+                # of the structure though, since it will change the sequences in the dataset. But
+                # for the paper, it's probably a minor enough detail that no one will care. Worth
+                # doing? Would avoid a lot of headache down the road. Don't change the dataset
+                # structure, just change how sequences are recorded so the period during
+                # fluoro-hunting continues whatever activity was happening before.
                 state.wire_looks_good = self.evaluate_wire_position(
                     wire, corridor, device, false_positive_rate=false_positive_rate
                 )

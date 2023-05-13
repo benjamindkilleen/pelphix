@@ -251,7 +251,7 @@ class SimState:
         # Could be moving onto new wire, or going to the screw for the same wire...
         if (
             self.frame == Frame.end
-            or self.acquisition in [Acquisition.start, Acquisition.end]
+            or self.acquisition in [Acquisition.end]
             or self.activity in [Activity.end]
         ):
             assert self.previous is not None
@@ -264,15 +264,6 @@ class SimState:
             # This fundamentally assumes that before being done with inserting the wire, it has been checked
             # That may not be correct, but we can't go back from inserting a screw.
             self.wire_looks_good = False
-            # self.wire_looks_good = (
-            #     self.activity
-            #     in {
-            #         Activity.insert_wire,
-            #         Activity.insert_screw,
-            #         Activity.end,
-            #     }
-            #     or self.task.is_screw()
-            # )
 
             # used primarily to signal when to go back to wire insertion
             # Wire
