@@ -65,7 +65,8 @@ sim:
   cache_dir: ${hydra:runtime.cwd}/cache/pelphix
   num_workers: ${num_workers}
 
-  skill_factor: [0.6, 0.8]
+  skill_factor: [0.2, 0.4]
+  view_skill_factor: [0.6, 0.8]
   view_tolerance:
     # in degrees.
     # ap: 3

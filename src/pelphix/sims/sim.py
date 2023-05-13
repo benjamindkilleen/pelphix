@@ -74,6 +74,7 @@ class PelphixSim(PelphixBase, Process):
         overwrite: bool = False,
         cache_dir: Optional[Path] = None,
         skill_factor: tuple[float, float] = (0.5, 1.0),
+        view_skill_factor: tuple[float, float] = (0.5, 1.0),
         view_tolerance: dict[str, float] = dict(),
         random_translation_bounds: dict[str, float] = dict(),
         random_angulation_bounds: dict[str, float] = dict(),
@@ -145,6 +146,7 @@ class PelphixSim(PelphixBase, Process):
         self.finished_queue = finished_queue
         self.corridor_radii = corridor_radii
         self.skill_factor = tuple(skill_factor)
+        self.view_skill_factor = tuple(view_skill_factor)
         self.view_tolerance = deepdrr.utils.radians(dict(view_tolerance), degrees=True)
         self.random_translation_bounds = dict(random_translation_bounds)
         self.random_angulation_bounds = deepdrr.utils.radians(
@@ -771,8 +773,12 @@ class PelphixSim(PelphixBase, Process):
 
         # sample the skill factor
         # smaller skill factor is more skilled
-        skill_factor = np.random.uniform(*self.skill_factor)  # .6, .8
-        log.info(f"Sampling skill factor: {skill_factor}")
+        # skill_factor = np.random.uniform(*self.skill_factor)  # .6, .8
+        view_skill_factor = np.random.uniform(*self.view_skill_factor)  # .6, .8
+        # log.info(f"Sampling skill factor: {skill_factor}")
+        log.warning(f"TODO: remove this hard-coded skill factor.")
+        skill_factor = 0.1
+        view_skill_factor = 0.8
 
         # Sample the device parameters randomly.
         device = self.sample_device()
@@ -918,9 +924,14 @@ class PelphixSim(PelphixBase, Process):
                     # 50% chance of switching views when the wire is close to the startpoint.
                     state.need_new_view = True
 
+            # Pre-image assessments, basically of the previous image.
             if state.acquisition == Acquisition.start:
-                # Start of the activity.
                 # TODO: I think here just evaluate whether the wire/screw looks good. This is just evaluating the previous image, since we are continuing directly after
+
+                # So if the wire does not look good, and we're in insertion, it will go back to
+                # positioning, even though it's about to start a new acquisition.
+                # We only want to change to positioning when the wire is retracted.
+                # TODO: figure out if this is a big deal, or if we can correct for it.
                 state.wire_looks_good = self.evaluate_wire_position(
                     wire, corridor, device, false_positive_rate=false_positive_rate
                 )
@@ -967,7 +978,7 @@ class PelphixSim(PelphixBase, Process):
                     device,
                     current_view,
                     desired_view,
-                    skill_factor=skill_factor,
+                    skill_factor=view_skill_factor,
                 )
                 device.set_view(
                     *current_view,
@@ -982,6 +993,7 @@ class PelphixSim(PelphixBase, Process):
                 log.debug(
                     f"Assessment with {state}, {wire_placed[corridor_name]}, state.previous={state.previous}"
                 )
+
                 if (
                     state.task.is_wire()
                     and not wire_placed[corridor_name]
@@ -989,7 +1001,7 @@ class PelphixSim(PelphixBase, Process):
                 ):
                     # Start of a wire task, after a view has been achieved, but a wire has not yet been placed. Sample the initial wire position.
                     # TODO: only do this if the view looks good. Sampling the initial wire position shouldn't be done here.
-                    log.warning(f"remove hard-coded initial placement")
+                    # log.warning(f"remove hard-coded initial placement")
                     log.debug(f"Sampling initial wire position for {corridor_name}")
                     wire.orient(
                         geo.random.normal(
@@ -998,10 +1010,10 @@ class PelphixSim(PelphixBase, Process):
                             scale=4,
                             radius=10,
                         ),
-                        corridor.get_direction(),
-                        # geo.random.spherical_uniform(
-                        #     corridor.get_direction(), d_phi=FIFTEEN_DEGREES
-                        # ),
+                        # corridor.get_direction(),
+                        geo.random.spherical_uniform(
+                            corridor.get_direction(), d_phi=FIFTEEN_DEGREES
+                        ),
                     )
                     wire_placed[corridor_name] = True
                 elif state.task.is_screw() and not screw_placed[corridor_name]:
@@ -1011,6 +1023,7 @@ class PelphixSim(PelphixBase, Process):
                     if not wire_looks_good:
                         # We were going to do screw insertion, but turns out the wire doesn't look good.
                         # So need to go back to wire positioning and continue.
+                        # This is a wire reset.
                         state.fix_wire = True
                         wire_placed[corridor_name] = False
                         continue
@@ -1025,6 +1038,7 @@ class PelphixSim(PelphixBase, Process):
 
             image_path = images_dir / f"{frame_id:09d}_{'-'.join(state.values())}.png"
 
+            ##################### Taking the image #####################
             t0 = time.time()
             self.project_image(
                 annotation,
@@ -1129,6 +1143,7 @@ class PelphixSim(PelphixBase, Process):
                     state.need_new_view = True
                     log.info("Need new view.")
                     continue
+
             elif state.activity == Activity.insert_screw:
                 state.wire_looks_good = self.evaluate_wire_position(
                     wire, corridor, device, false_positive_rate=false_positive_rate
