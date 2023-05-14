@@ -797,10 +797,9 @@ class PelphixSim(PelphixBase, Process):
         screw_catid = self.get_annotation_catid("screw")
 
         # Sample the procedure.
-        log.warning(f"TODO: remove this hard-coded procedure length.")
+        # log.warning(f"TODO: remove this hard-coded procedure length.")
         max_corridors = len(corridors)
         # max_corridors = np.random.randint(min(len(corridors), 4), len(corridors) + 1)
-        log.debug(f"Sampling {max_corridors} corridors.")
         log.info(f"Sampling {max_corridors} corridors.")
 
         # Wires and screws accessed by the corresponding corridor name.
