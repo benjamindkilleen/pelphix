@@ -816,11 +816,19 @@ class PelphixSim(PelphixBase, Process):
         for i, name in enumerate(corridors):
             corr = corridors[name]
             wire = deepdrr.vol.KWire.from_example()
-            insertable_length = corr.length() * self.screw_insertion_fraction[name]
+            insertable_length = np.clip(
+                corr.length() * self.screw_insertion_fraction[name], 30, 130
+            )
             screw_choices = list(
                 get_screw_choices(insertable_length) - get_screw_choices(insertable_length - 20)
             )
-            screw_type = screw_choices[np.random.choice(len(screw_choices))]
+            if len(screw_choices) == 0:
+                screw_choices = list(get_screw_choices(insertable_length))[-1]
+            else:
+                screw_type = screw_choices[np.random.choice(len(screw_choices))]
+
+            log.debug(f"Sampling screw type {screw_type} for corridor {name}")
+
             screw = screw_type(density=0.06)
             wire.place_center([99999, 99999, 99999])
             screw.place_center([99999, 99999, 99999])
