@@ -250,14 +250,18 @@ sequences_train:
   image_size: ${unet_image_size}
   triplets: ${triplets}
   configs:
-    - loader: load
-      config:
-        annotation_path: ${sim.root}/annotations/pelphix_000002_train.json
-        image_dir: ${sim.root}/pelphix_000002_train
     # - loader: load
     #   config:
-    #     annotation_path: ${sim.root}/annotations/pelphix_000032_train.json
-    #     image_dir: ${sim.root}/pelphix_000032_train
+    #     annotation_path: ${sim.root}/annotations/pelphix_000002_train.json
+    #     image_dir: ${sim.root}/pelphix_000002_train
+    - loader: load
+      config:
+        annotation_path: ${sim.root}/annotations/pelphix_000338_train.json
+        image_dir: ${sim.root}/pelphix_000338_train
+    # - loader: load
+    #   config:
+    #     annotation_path: ${sim.root}/annotations/pelphix_000339_train.json
+    #     image_dir: ${sim.root}/pelphix_000339_train
     # - loader: load
     #   config: 
     #     annotation_path: ${sim.root}/annotations/pelphix_000400_train.json

@@ -128,7 +128,7 @@ def vis(cfg):
 
     """Visualize the training set."""
     dataset = PerphixSequenceDataset.from_configs(**cfg.sequences_train)
-    for procedure_idx in [0]:
+    for procedure_idx in [0, 50, 100, 150, 200]:
         if procedure_idx >= dataset.num_procedures:
             break
         frames = dataset.visualize_procedure(procedure_idx, show_annotations=cfg.show)

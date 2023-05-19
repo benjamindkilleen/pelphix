@@ -187,6 +187,7 @@ class PelphixSim(PelphixBase, Process):
         self.tmp_dir.mkdir(parents=True, exist_ok=True)
 
         # Zip the images rather than upload them directly.
+        (self.annotations_dir / ".nosync").touch()
         (self.images_dir / ".nosync").touch()
         (self.tmp_dir / ".nosync").touch()
 
@@ -1422,57 +1423,9 @@ class PelphixSim(PelphixBase, Process):
         )
 
         # Zip the images
-        log.info("Zipping images (may take a while)...")
-        if not (self.root / f"{self.images_dir.stem}.zip").exists():
-            shutil.make_archive(self.images_dir.stem, "zip", self.root, self.images_dir)
-
-    @property
-    def annotation_path(self) -> Path:
-        """Get the path to the annotation file."""
-        return self.annotations_dir / f"{self.name}.json"
-
-    @property
-    def instance_annotation_path(self) -> Path:
-        """Get the path to the annotation file."""
-        return self.annotations_dir / f"{self.name}_instances.json"
-
-    @property
-    def keypoints_annotation_path(self) -> Path:
-        """Get the path to the annotation file."""
-        return self.annotations_dir / f"{self.name}_keypoints.json"
-
-    def get_annotation(self) -> dict[str, Any]:
-        """Get the annotation dictionary."""
-        return load_json(self.annotation_path)
-
-    @classmethod
-    def _merge_annotations(self, *annotations: dict[str, Any]) -> dict[str, Any]:
-        """Merge the RLE annotations together.
-
-        Resulting annotation will not have an ID, category id, or image_id. Also, keypoints will be
-        concatenated together in the order they are passed in.
-
-        Args:
-            annotations: The annotations to merge.
-
-        Returns:
-            The merged annotation.
-
-        """
-        seg = mask_utils.merge([a["segmentation"] for a in annotations])
-        seg["counts"] = seg["counts"].decode("utf-8")
-        bbox = mask_utils.toBbox(seg).tolist()
-        area = int(mask_utils.area(seg))
-        if "keypoints" in annotations[0]:
-            keypoints = np.concatenate([a["keypoints"] for a in annotations]).tolist()
-        return {
-            "segmentation": seg,
-            "bbox": bbox,
-            "area": area,
-            "keypoints": keypoints,
-            "num_keypoints": len(keypoints) // 3,
-            "iscrowd": 0,
-        }
+        # log.info("Zipping images (may take a while)...")
+        # if not (self.root / f"{self.images_dir.stem}.zip").exists():
+        #     shutil.make_archive(self.images_dir.stem, "zip", self.root, self.images_dir)
 
     # TODO: add a function to convert annotation files, adding individual segmentation masks/boxes
     # for the pelvis keypoints. This will allow us to segment them with DICE scores. Be sure to only
