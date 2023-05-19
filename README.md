@@ -41,7 +41,7 @@ processing.
 Clone the repository:
 
 ```bash
-git clone git@github.com:benjamindkilleen/pelvic-workflow-recognition.git
+git clone git@github.com:benjamindkilleen/pelphix.git
 git submodule init
 git submodule update
 ```
