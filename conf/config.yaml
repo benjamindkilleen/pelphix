@@ -204,12 +204,19 @@ optimizer:
   lr: 0.0001
   weight_decay: 0.0001
 
+data_num_workers: 4
+dataloader:
+  batch_size: ${batch_size}
+  num_workers: ${data_num_workers}
+  drop_last: False
+
+
 trainer:
   devices: ${gpus}
   accelerator: gpu
   strategy: ddp
   deterministic: True
-  precision: 32 # 16, 32 might be needed because embedded features are large (usually in range (-25, 25)).
+  precision: 16 # 32 # 32 might be needed because embedded features are large (usually in range (-25, 25)).
   max_epochs: 10000
   gradient_clip_val: 5 # 0.5
   log_every_n_steps: 10
@@ -250,26 +257,14 @@ sequences_train:
   image_size: ${unet_image_size}
   triplets: ${triplets}
   configs:
-    # - loader: load
-    #   config:
-    #     annotation_path: ${sim.root}/annotations/pelphix_000002_train.json
-    #     image_dir: ${sim.root}/pelphix_000002_train
     - loader: load
       config:
         annotation_path: ${sim.root}/annotations/pelphix_000338_train.json
         image_dir: ${sim.root}/pelphix_000338_train
-    # - loader: load
-    #   config:
-    #     annotation_path: ${sim.root}/annotations/pelphix_000339_train.json
-    #     image_dir: ${sim.root}/pelphix_000339_train
-    # - loader: load
-    #   config: 
-    #     annotation_path: ${sim.root}/annotations/pelphix_000400_train.json
-    #     image_dir: ${sim.root}/pelphix_000400_train
-    # - loader: load
-    #   config:
-    #     annotation_path: ${sim.root}/annotations/pelphix_000345_train.json
-    #     image_dir: ${sim.root}/pelphix_000345_train
+    - loader: load
+      config:
+        annotation_path: ${sim.root}/annotations/pelphix_000339_train.json
+        image_dir: ${sim.root}/pelphix_000339_train
 
 sequences_val:
   seq_len: ${unet_seq_len}
@@ -279,8 +274,13 @@ sequences_val:
   configs:
     - loader: load
       config:
-        annotation_path: ${sim.root}/annotations/pelphix_000400_val.json
-        image_dir: ${sim.root}/pelphix_000400_val
+        annotation_path: ${sim.root}/annotations/pelphix_000338_val.json
+        image_dir: ${sim.root}/pelphix_000338_val
+    - loader: load
+      config:
+        annotation_path: ${sim.root}/annotations/pelphix_000339_val.json
+        image_dir: ${sim.root}/pelphix_000339_val
+
 
 sequences_test:
   seq_len: ${unet_seq_len} # 300 rather than 100

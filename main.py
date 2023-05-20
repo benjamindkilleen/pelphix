@@ -102,6 +102,8 @@ def generate(cfg):
 def train(cfg):
     from pelphix.modules.seq import PelphixModule
 
+    mp.set_start_method("spawn", force=True)
+
     train_dataset = PerphixSequenceDataset.from_configs(**cfg.sequences_train)
     counts = train_dataset.get_sequence_counts()
     val_dataset = PerphixSequenceDataset.from_configs(**cfg.sequences_val)
@@ -110,6 +112,7 @@ def train(cfg):
     val_dataloader = DataLoader(val_dataset, **cfg.dataloader)
     trainer = pl.Trainer(**cfg.trainer)
 
+    log.info(f"Training on {len(train_dataset)} sequences.")
     if cfg.weights_only:
         # For resuming training after changing the scheduler or something
         module = PelphixModule.load_from_checkpoint(

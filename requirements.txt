@@ -23,6 +23,7 @@ gpustat
 StrEnum
 SciencePlots
 albumentations
+imgaug
 timm
 imgkit
 pycocotools

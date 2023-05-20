@@ -83,11 +83,6 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
 
 ![results](images/liverpool_000000000.png)
 
-## Known Issues
-
-If an unsuitable trajectory is observed during wire insertion, the state will return to wire
-positioning before the wire is actually withdrawn, during which fluoro-hunting may occur.
-
 ## TODO
 
 Current bug:
