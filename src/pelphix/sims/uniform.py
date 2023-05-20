@@ -92,6 +92,8 @@ class PelphixUniform(PelphixBase):
         self.finished_queue = finished_queue
         self.num_workers = num_workers
         self.num_samples_per_case = num_samples_per_case
+        self.max_wires = max_wires
+        self.max_screws = max_screws
 
         case_names = sorted(
             [
@@ -128,6 +130,12 @@ class PelphixUniform(PelphixBase):
     # TODO: sample_case(), generate(), and run() methods. Pretty simple. Have to sample more often
     # around AP than lateral. Base it off of solid angle.
 
+    def get_tmp_annotation_path(self, case_name: str) -> Path:
+        return self.tmp_dir / f"{case_name}.json"
+
+    def get_tmp_images_dir(self, case_name: str) -> Path:
+        return self.tmp_dir / case_name
+
     def sample_case(self, case_name: str):
         """Sample images for a given case.
 
@@ -147,7 +155,60 @@ class PelphixUniform(PelphixBase):
         8. Do the projection and save the image and annotations.
 
         """
-        pass
+        annotation_path = self.get_tmp_annotation_path(case_name)
+        annotation = self.get_base_annotation()
+        images_dir = self.get_tmp_images_dir(case_name)
+
+        device = self.sample_device()
+        wire_catid = self.get_annotation_catid("wire")
+        screw_catid = self.get_annotation_catid("screw")
+
+        # Get the volumes
+        ct, seg_volumes, seg_meshes, corridors, pelvis_landmarks = self.load_case(case_name)
+        wires = deepdrr.vol.KWire.from_example()
+        screw_choices = list(get_screw_choices())
+        screws = []
+        for screw_idx in range(self.max_screws):
+            screw = screw_choices[np.random.choice(len(screw_choices))]
+            screws.append(screw)
+
+        # Probability for the number of wires and screws
+        wire_probabilities = [0.5] + [0.5 / len(wires)] * len(wires)
+        screw_probabilities = [0.5] + [0.5 / len(screws)] * len(screws)
+
+        intensity_upper_bound = np.random.uniform(2, 8)
+        projector = Projector(
+            [ct, *wires, *screws],
+            device=device,
+            neglog=True,
+            step=0.05,
+            intensity_upper_bound=intensity_upper_bound,
+            attenuate_outside_volume=True,
+        )
+        projector.initialize()
+
+        # Mapping from track id to projector
+        # Not really a trackid, but whatever
+        seg_projectors: dict[int, Projector] = dict()
+
+        # Add the volumes to the projector
+        for seg_name, seg_volume in seg_volumes.items():
+            track_id = 1000 * self.get_annotation_catid(seg_name) + 0
+            seg_projectors[track_id] = Projector(seg_volume, device=device, neglog=True)
+            seg_projectors[track_id].initialize()
+
+        for wire_idx, wire in enumerate(wires):
+            track_id = 1000 * wire_catid + wire_idx
+            seg_projectors[track_id] = Projector(wire, device=device, neglog=True)
+            seg_projectors[track_id].initialize()
+
+        for screw_idx, screw in enumerate(screws):
+            track_id = 1000 * screw_catid + screw_idx
+            seg_projectors[track_id] = Projector(screw, device=device, neglog=True)
+            seg_projectors[track_id].initialize()
+
+        for i in range(self.num_samples_per_case):
+            pass
 
         # TODO: fix cylinder projection so that the circular ends are also projected, possibly by
         # sampling edge points and taking a convex hull. can use scipy for that, but may be much

@@ -1,4 +1,4 @@
-from typing import Type, List
+from typing import Optional, Type, List
 import logging
 from pathlib import Path
 from deepdrr import geo
@@ -172,7 +172,7 @@ def get_screw(length: int) -> Type[CannulatedScrew]:
         return Screw_T16_L130
 
 
-def get_screw_choices(length: int) -> set[Type[CannulatedScrew]]:
+def get_screw_choices(length: Optional[int] = None) -> set[Type[CannulatedScrew]]:
     """Get a list of all the screws shorter than `length`."""
     screws: set[Type[CannulatedScrew]] = {
         Screw_T16_L30,
