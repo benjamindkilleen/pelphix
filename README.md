@@ -24,19 +24,23 @@ Surgical Phase Recognition from X-ray Images in Percutaneous Pelvic Fixation
 
 Surgical phase recognition (SPR) is a crucial element in the digital transformation of the modern operating theater. While SPR based on video sources is well-established, incorporation of interventional X-ray sequences has not yet been explored. This paper presents Pelphix, a first approach to SPR for X-ray-guided percutaneous pelvic fracture fixation, which models the procedure at four levels of granularity – corridor, activ- ity, view, and frame value – simulating the pelvic fracture fixation work- flow as a Markov process to provide fully annotated training data. Using added supervision from detection of bony corridors, tools, and anatomy, we learn image representations that are fed into a transformer model to regress surgical phases at the four granularity levels. Our approach demonstrates the feasibility of X-ray-based SPR, achieving an average accuracy of 93.8% on simulated sequences and 67.57% in cadaver across all granularity levels, with up to 88% accuracy for the target corridor in real data. This work constitutes the first step toward SPR for the X-ray domain, establishing an approach to categorizing phases in X-ray-guided surgery, simulating realistic image sequences to enable machine learning model development, and demonstrating that this approach is feasible for the analysis of real procedures. As X-ray-based SPR continues to ma- ture, it will benefit procedures in orthopedic surgery, angiography, and interventional radiology by equipping intelligent surgical systems with situational awareness in the operating room.
 
-If you find this work useful in your research, please consider citing:
-
-```bibtex
-TODO: add citation
-```
-
 ## Data
 
 <!-- TODO: add download links when available. -->
 
-| Download Link | Train Procedures | Train Images | Val Procedures | Download Size |
+The simulated training and validation data can be downloaded here.
+
+| Download | Training Images | Val Images |  Download Size |
 | ------------ | -------- | ------------ | ------------- |
-| pelphix_000338.zip | 338 | 139922 | 3.5 GB |
+| pelphix_000338 | 139,922 | 4,285 | 3.2 GB |
+| pelphix_000339 | 139,787 | 4,230 | 3.2 GB |
+| **Total** | **279,709** | **8,515** | **6.4 GB** |
+
+Sequences from our cadaveric experiments are available from the following links:
+
+| Download | Images | Download Size |
+| ------------ | -------- | ------------- |
+| liverpool | 256 | 1.2 GB |
 
 ## Installation
 
@@ -75,70 +79,35 @@ python main.py experiment={ssm,generate,pretrain,train,test} [options]
 
 See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common variations are:
 
+- `ckpt=/path/to/last.ckpt` to load a model checkpoint for resuming training or running inference.
 - `gpus=n` to use `n` GPUs.
 
-## Details
+## Citation
 
-![simulation](images/simulation_overview.png)
+If you found this work useful, please cite [our paper](https://arxiv.org/abs/2304.09285):
 
-![architecture](images/architecture.png)
+```bibtex
+@article{Pelphix2023,
+ author = {Killeen, Benjamin D. and Zhang, Han and Mangulabnan, Jan and Armand, Mehran and Taylor, Russel H. and Osgood, Greg and Unberath, Mathias},
+ title = {{Pelphix: Surgical Phase Recognition from X-ray Images in Percutaneous Pelvic Fixation}},
+ journal = {arXiv},
+ year = {2023},
+ month = apr,
+ eprint = {2304.09285},
+ doi = {10.48550/arXiv.2304.09285}
+}
+```
 
-![results](images/liverpool_000000000.png)
+If you use the simulated data, please also cite the NMDID database:
 
-## TODO
-
-Current bug:
-
-TODO before rebuttal:
-
-- [ ] Add view-invariant pretraining dataset.
-  - [ ] Screws and wires in random positions/orientatins in the sphere.
-  - [ ] Randomly sample views in 75 degrees around AP, 30 degrees around lateral.
-  - [ ] Randomly sample positions in the sphere.
-  - [ ] Anatomy segmentations, corridor segmentations, keypoints, wires, screws.
-  - [ ] (Maybe) classify views as being from a standard view (and which one) or not, based on a head coming off the U-Net bottom.
-  - [ ] Add Keypoints to the tools, just the tip and base.
-  - [ ] Make a squite of more realistic K-wires, with threaded tips.
-  - [ ] Include all the screws.
-
-- [ ] Fix sequence generation to be more realistic.
-  - [ ] When screw is inserted, check it from two views?
-  - [ ] Optional: After wire placement, odds of going to corresponding screw placement should be higher.
-  - [ ] Optional: "Correct" view might be randomly sampled.
-  - [ ] Future work: Fluoro-hunting makes more sense as an activity. This also requires non-hierarchical state machine.
-  - [X] Wire is being inserted while in the position_wire mode. Probably because we are continuing after wire insertion without taking an image.
-  - [X] Fluoro-hunting should be less pronounced as procedure goes on.
-  - [X] New view isn't being sampled when the wire looks good, especially in the middle of insertion.
-  - [X] Make sampling more realistic for views/positions (fiddle with bounds, make lower bounds larger, more randomness)
-  - [X] First "wire insert" should actually advance the wire.
-  - [X] As soon as the wire is fully inserted, move to the next task. (done?)
-  - [X] Screw insertion is looping without any advancement.
-  - [X] Initial wire positioning is way off, not within 15 degrees of correct.
-  - [X] On first wire insert, there appears to also be some wire positioning.
-  - [X] Remove `Step` from the Workflow State.
-  - [X] Randomly sample task order. Allow screw insertion to be sampled at any time.
-  - [X] Limit views for each task to ones actually used.
-  - [X] Add missing views (IO, OO)
-  - [X] Corridor segmentation should never vary, only the distance along it that wires/screws are inserted.
-  - [X] Wire should always go the correct length along the corridor (whatever that is for the given corridor).
-  - [X] Don't place the wire at start until no longer in fluoro hunting the desired view is achieved. Same with screw.
-  - [X] If we just determined the wire was positioned correctly, don't change the acquisition.
-  - [X] Decision to go to wire insertion needs to include likelihood of checking the other view instead. We're at the end of a
-  - [X] Choose screw based on insertion fractions, not corridor length.
-  - [X] For some reason, the last image with a given view is always "fluoro-hunting."
-  - [X] Screw views should not include down-the-barrel (done, not run)
-  - [X] Screw advancement should always include a stop with the tip at the bone.
-- [ ] Minor model changes
-  - [ ] Pre-training step, with `(black, black, frame)` as input.
-  - [ ] 3-frame input should be `(prev-prev, prev, current)`, with black for `prev-prev` and `prev` if it doesn't exist.
-
-Maybe TODO (but not deal-breakers):
-
-- [ ] Re-build SSM with new meshes and regularization. (Likely not necessary.)
-
-TODO before journal extension:
-
-- [ ] Update the model to something more advanced, maybe TransUNet
-  - [ ] Eventually use SwinTransformer
+```bibtex
+@misc{NMDID2020,
+  author = {Edgar, HJH and Daneshvari Berry, S and Moes, E and Adolphi, NL and Bridges, P and Nolte, KB},
+  title = {New Mexico Decedent Image Database},
+  year = {2020},
+  howpublished = {Office of the Medical Investigator, University of New Mexico},
+  doi = {10.25827/5s8c-n515},
+}
+```
 
 </div>
