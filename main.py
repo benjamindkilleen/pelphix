@@ -127,14 +127,14 @@ def train(cfg):
 
 @pelphix.register_experiment
 def vis(cfg):
-    from pygifsicle import optimize
-
     """Visualize the training set."""
     dataset = PerphixSequenceDataset.from_configs(**cfg.sequences_train)
-    for procedure_idx in [0, 50, 100, 150, 200]:
+    images_dir = Path(get_original_cwd()) / "images"
+    for procedure_idx in [0]:
         if procedure_idx >= dataset.num_procedures:
             break
         frames = dataset.visualize_procedure(procedure_idx, show_annotations=cfg.show)
+        frames = frames[:200]
 
         # Repeat the last frame for a few seconds
         # last_frame = frames[-1].copy()
@@ -143,26 +143,21 @@ def vis(cfg):
         #     last_frames.append(last_frame.copy())
         # frames = np.concatenate([frames, last_frames], axis=0)
 
-        images_dir = Path(get_original_cwd()) / "images"
-        output_path = images_dir / f"procedure_{procedure_idx:03d}.mp4"
-        writer = imageio.get_writer(output_path, fps=cfg.fps)
-        log.info(f"Saving mp4 to {output_path}...")
-        for frame in frames:
-            writer.append_data(frame)
-        writer.close()
+        # output_path = images_dir / f"procedure_{procedure_idx:03d}.mp4"
+        # writer = imageio.get_writer(output_path, fps=cfg.fps)
+        # log.info(f"Saving mp4 to {output_path}...")
+        # for frame in frames:
+        #     writer.append_data(frame)
+        # writer.close()
 
-        # output_path = images_dir / f"procedure_{procedure_idx:03d}.gif"
-
-        # log.info(f"Saving gif to {output_path}...")
-        # iio.imwrite(
-        #     output_path,
-        #     frames,
-        #     duration=250,  # int(len(frames)),
-        #     loop=0,
-        # )
-
-        # log.info("Optimizing gif...")
-        # optimize(output_path)
+        output_path = images_dir / f"procedure_{procedure_idx:03d}.gif"
+        log.info(f"Saving gif to {output_path}...")
+        iio.imwrite(
+            output_path,
+            frames,
+            duration=250,  # int(len(frames)),
+            loop=0,
+        )
 
 
 @pelphix.register_experiment

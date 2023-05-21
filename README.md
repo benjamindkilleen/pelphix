@@ -32,9 +32,11 @@ TODO: add citation
 
 ## Data
 
-TODO: add data download instructions from Zenodo, first to the zip folders of the Pelphix datasets.
-Provide instructions for obtaining the NMDID data, and maybe link to the nmdid-arcade repo for
-processing.
+<!-- TODO: add download links when available. -->
+
+| Download Link | Train Procedures | Train Images | Val Procedures | Download Size |
+| ------------ | -------- | ------------ | ------------- |
+| pelphix_000338.zip | 338 | 139922 | 3.5 GB |
 
 ## Installation
 

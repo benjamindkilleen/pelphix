@@ -177,9 +177,6 @@ sim:
 overwrite: False
 
 gpus: 1
-# checkpoint: null
-# download: True
-# augment: True
 eval_only: False
 image_size: 224 # 384
 onedrive:
