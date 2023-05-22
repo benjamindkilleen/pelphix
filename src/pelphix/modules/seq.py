@@ -16,12 +16,11 @@ from pytorch_lightning.callbacks import DeviceStatsMonitor
 from pytorch_lightning.callbacks import LearningRateMonitor
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torchmetrics import Accuracy
-import subprocess as sp
-import csv
-import os
 from deepdrr.utils import image_utils
 import pandas as pd
 from collections import Counter
+import imageio.v3 as iio
+import imageio
 from perphix.data import PerphixDataset, PerphixContainer
 
 from ..plots import plot_sequence_predictions
@@ -429,14 +428,6 @@ class PelphixModule(pl.LightningModule):
             seq_images_dir.mkdir(parents=True, exist_ok=True)
             seq_image_dirs.add(seq_images_dir)
 
-            mask_images_dir = dataset_results_dir / "masks"
-            mask_images_dir.mkdir(parents=True, exist_ok=True)
-            mask_image_dirs.add(mask_images_dir)
-
-            heatmap_images_dir = dataset_results_dir / "heatmaps"
-            heatmap_images_dir.mkdir(parents=True, exist_ok=True)
-            heatmap_image_dirs.add(heatmap_images_dir)
-
             csv_path = dataset_results_dir / f"{dataset_name}_{procedure_idx:09d}.csv"
             if csv_path.exists():
                 log.info(f"Appending to {csv_path}. Delete it to overwrite.")
@@ -479,9 +470,12 @@ class PelphixModule(pl.LightningModule):
                 # pred = dataset.get_sequence_names_from_labels(predictions[n, s])
 
                 labeled_image = images[n, s].transpose(1, 2, 0).copy()  # (H, W, C)
+
+                # Undo the triplets
                 labeled_image = np.stack(
-                    [labeled_image[:, :, 1], labeled_image[:, :, 1], labeled_image[:, :, 1]], axis=2
+                    [labeled_image[:, :, 2], labeled_image[:, :, 2], labeled_image[:, :, 2]], axis=2
                 )
+                log.info(f"labeled_image: {labeled_image.mean()}, {labeled_image.std()}")
                 # Resize the image to 384x384
                 labeled_image = cv2.resize(labeled_image, (512, 512))
 
@@ -489,13 +483,15 @@ class PelphixModule(pl.LightningModule):
                 labeled_image = cv2.flip(labeled_image, 1)
 
                 # Add row to df if Frame Number is not in the df
-                row = {
-                    "Index": s,  # BAD
-                    "Frame Number": image_ids[n, s],
-                    **gt,
-                    **dict((f"pred_{k}", v) for k, v in pred.items()),
-                }
-                df = df.append(row, ignore_index=True)
+                row = pd.DataFrame(
+                    {
+                        "Index": [s],  # BAD
+                        "Frame Number": [image_ids[n, s]],
+                        **dict((k, [v]) for k, v in gt.items()),
+                        **dict((f"pred_{k}", [v]) for k, v in pred.items()),
+                    }
+                )
+                df = pd.concat([df, row], ignore_index=True)
                 image_name = f"{image_ids[n, s]:09d}.png"
 
                 # Write out the image with sequence labels
@@ -533,15 +529,14 @@ class PelphixModule(pl.LightningModule):
                         GREEN,
                         thickness,
                     )
-                # labeled_image = cv2.cvtColor(labeled_image, cv2.COLOR_RGB2BGR)
+
                 image_path = seq_images_dir / f"{image_ids[n, s]:09d}.png"
                 H, W = labeled_image.shape[:2]
-                # cv2.imwrite(str(image_path), labeled_image)
 
                 image = images[n, s].transpose(1, 2, 0).copy()
                 image = np.stack(
-                    [image[:, :, 1], image[:, :, 1], image[:, :, 1]], axis=2
-                )  # middle channel
+                    [image[:, :, 2], image[:, :, 2], image[:, :, 2]], axis=2
+                )  # last channel
                 heatmap = heatmaps[n, s].transpose(1, 2, 0)
                 mask = masks[n, s].transpose(1, 2, 0)
 
@@ -556,6 +551,7 @@ class PelphixModule(pl.LightningModule):
                 mask_image = cv2.resize(mask_image, (W, H))
 
                 tiled_image = np.concatenate([labeled_image, heatmap_image, mask_image], axis=1)
+                tiled_image = cv2.cvtColor(tiled_image, cv2.COLOR_RGB2BGR)  # TODO: keep?
                 image_utils.save(image_path, tiled_image)
 
                 # TODO: make these functions scale up the image and write labels on it.
@@ -594,43 +590,17 @@ class PelphixModule(pl.LightningModule):
             plot_sequence_predictions(csv_path)
             eval_metrics(csv_path)
 
-        seq_image_dirs = reduce(lambda a, b: a | b, [r["seq_image_dirs"] for r in results])
+        seq_image_dirs: list[Path] = reduce(
+            lambda a, b: a | b, [r["seq_image_dirs"] for r in results]
+        )
         for seq_image_dir in seq_image_dirs:
             dataset_results_dir = seq_image_dir.parent
             dataset_name = dataset_results_dir.parts[-2]
             procedure_idx = int(dataset_results_dir.parts[-1])
+            frames = np.array([cv2.imread(str(p)) for p in sorted(seq_image_dir.glob("*.png"))])
             gif_path = dataset_results_dir / f"{dataset_name}_{procedure_idx:09d}_sequences.gif"
-            sp.run(
-                [
-                    f'ffmpeg -pattern_type glob -f image2 -framerate 1 -i "*.png" -loop 0 {gif_path.absolute()}'
-                ],
-                cwd=str(seq_image_dir),
-                shell=True,
-            )
-
-        # mask_image_dirs = reduce(lambda a, b: a | b, [r["mask_image_dirs"] for r in results])
-        # for mask_image_dir in mask_image_dirs:
-        #     dataset_results_dir = mask_image_dir.parent
-        #     dataset_name = dataset_results_dir.parts[-2]
-        #     procedure_idx = int(dataset_results_dir.parts[-1])
-        #     gif_path = dataset_results_dir / f"{dataset_name}_{procedure_idx:09d}_masks.gif"
-        #     sp.run(
-        #         [f'ffmpeg -pattern_type glob -f image2 -framerate 1 -i "*.png" -loop 0 {gif_path.absolute()}'],
-        #         cwd=str(mask_image_dir),
-        #         shell=True,
-        #     )
-
-        # heatmap_image_dirs = reduce(lambda a, b: a | b, [r["heatmap_image_dirs"] for r in results])
-        # for heatmap_image_dir in heatmap_image_dirs:
-        #     dataset_results_dir = heatmap_image_dir.parent
-        #     dataset_name = dataset_results_dir.parts[-2]
-        #     procedure_idx = int(dataset_results_dir.parts[-1])
-        #     gif_path = dataset_results_dir / f"{dataset_name}_{procedure_idx:09d}_heatmaps.gif"
-        #     sp.run(
-        #         [f'ffmpeg -pattern_type glob -f image2 -framerate 1 -i "*.png" -loop 0 {gif_path.absolute()}'],
-        #         cwd=str(heatmap_image_dir),
-        #         shell=True,
-        #     )
+            log.info(f"Writing GIF to {gif_path}")
+            iio.imwrite(gif_path, frames, duration=500, loop=1)
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), **self.optimizer)

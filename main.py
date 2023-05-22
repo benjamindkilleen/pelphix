@@ -155,7 +155,7 @@ def vis(cfg):
         iio.imwrite(
             output_path,
             frames,
-            duration=250,  # int(len(frames)),
+            duration=500,
             loop=0,
         )
 

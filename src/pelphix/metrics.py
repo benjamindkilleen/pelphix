@@ -52,14 +52,15 @@ def eval_metrics(source: Path):
         acc = correct / len(df)
         log.info(f"{lev} accuracy: {acc:.2f}")
         total_row.update({f"{lev}_acc": acc})
-    metrics_df.append(
+
+    row = pd.DataFrame(
         dict(
-            gt_corridor="total",
-            total=len(df),
-            **total_row,
+            gt_corridor=["total"],
+            total=[len(df)],
+            **dict((k, [v]) for k, v in total_row.items()),
         ),
-        ignore_index=True,
     )
+    metrics_df = pd.concat([metrics_df, row], ignore_index=True)
 
     # Confusion matrix
     for lev in level:
