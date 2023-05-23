@@ -233,7 +233,7 @@ liverpool:
 
 # Training the U-Net
 weights_only: False
-unet_seq_len: 48 # 48 and batch size of 2?
+unet_seq_len: 48
 unet_module:
   supercategories: ["task", "activity", "acquisition", "frame"]
   supercategory_num_classes: [8,3,8,2]

@@ -85,8 +85,6 @@ class PelphixModule(pl.LightningModule):
             unet=unet,
         )
 
-        log.info(f"Model:\n{self.model}")
-
         # For training.
         self.criteria = nn.ModuleList()
         for supercategory, num_classes in zip(supercategories, supercategory_num_classes_with_bg):
@@ -551,7 +549,7 @@ class PelphixModule(pl.LightningModule):
                 mask_image = cv2.resize(mask_image, (W, H))
 
                 tiled_image = np.concatenate([labeled_image, heatmap_image, mask_image], axis=1)
-                tiled_image = cv2.cvtColor(tiled_image, cv2.COLOR_RGB2BGR)  # TODO: keep?
+                # tiled_image = cv2.cvtColor(tiled_image, cv2.COLOR_RGB2BGR)  # TODO: keep?
                 image_utils.save(image_path, tiled_image)
 
                 # TODO: make these functions scale up the image and write labels on it.
@@ -594,13 +592,27 @@ class PelphixModule(pl.LightningModule):
             lambda a, b: a | b, [r["seq_image_dirs"] for r in results]
         )
         for seq_image_dir in seq_image_dirs:
+            frames = np.array(
+                [
+                    cv2.cvtColor(cv2.imread(str(p)), cv2.COLOR_BGR2RGB)
+                    for p in sorted(seq_image_dir.glob("*.png"))
+                ]
+            )
+
             dataset_results_dir = seq_image_dir.parent
             dataset_name = dataset_results_dir.parts[-2]
             procedure_idx = int(dataset_results_dir.parts[-1])
-            frames = np.array([cv2.imread(str(p)) for p in sorted(seq_image_dir.glob("*.png"))])
+
             gif_path = dataset_results_dir / f"{dataset_name}_{procedure_idx:09d}_sequences.gif"
-            log.info(f"Writing GIF to {gif_path}")
+            log.info(f"Writing GIF to {gif_path}...")
             iio.imwrite(gif_path, frames, duration=500, loop=1)
+
+            mp4_path = dataset_results_dir / f"{dataset_name}_{procedure_idx:09d}.mp4"
+            log.info(f"Writing MP4 to {mp4_path}...")
+            writer = imageio.get_writer(mp4_path, fps=2)
+            for frame in frames:
+                writer.append_data(frame)
+            writer.close()
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), **self.optimizer)
