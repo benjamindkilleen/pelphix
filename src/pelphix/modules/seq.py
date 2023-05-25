@@ -276,6 +276,7 @@ class PelphixModule(pl.LightningModule):
 
         sorted_predictions = []
         for i, pred_label in enumerate(pred_labels):
+            pred_label[0] = 0  # Ignore bg class
             prediction = np.argsort(to_numpy(pred_label), 2)[:, :, ::-1]
             prediction = prediction.transpose(1, 0, 2)  # (N, S, num_classes)
             sorted_predictions.append(prediction)
@@ -319,10 +320,13 @@ class PelphixModule(pl.LightningModule):
         fingers = [0] * len(sorted_preds)
         while all([fingers[i] < len(sorted_preds[i]) - 1 for i in range(len(sorted_preds))]):
             label = np.array([pr[fingers[i]] for i, pr in enumerate(sorted_preds)])
+            log.debug(f"label: {label}")
             sequence_names = dataset.get_sequence_names_from_labels(label)
-            if sequence_names["task"] not in completed:
+            if "task" not in sequence_names:
+                log.warning(f"Skipping {image_id} because no task was predicted: {sequence_names}")
+            elif sequence_names["task"] not in completed:
                 break
-            fingers[0] += 1
+            fingers[0] += 1  # Why are we doing this?
         return sequence_names
 
     def predict_step(self, batch: dict[str, torch.Tensor], batch_idx):
@@ -464,8 +468,10 @@ class PelphixModule(pl.LightningModule):
                 sorted_preds = [
                     pr[n, s] for pr in sorted_predictions
                 ]  # list of (num_classes,) arrays
-                pred = self.get_filtered_predictions(df, sorted_preds, dataset, image_ids[n, s])
-                # pred = dataset.get_sequence_names_from_labels(predictions[n, s])
+
+                # Either filter the predictions or use the raw predictions
+                # pred = self.get_filtered_predictions(df, sorted_preds, dataset, image_ids[n, s])
+                pred = dataset.get_sequence_names_from_labels(predictions[n, s])
 
                 labeled_image = images[n, s].transpose(1, 2, 0).copy()  # (H, W, C)
 

@@ -285,7 +285,7 @@ sequences_test:
   image_size: ${unet_image_size}
   fliph: true
   triplets: ${triplets}
-  overlap: 0.7
+  overlap: 0.1
   configs:
     - loader: from_csv
       config:
