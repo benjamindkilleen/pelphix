@@ -1,7 +1,7 @@
 # TODO remove unused packages
 torch
 torchvision
-pytorch-lightning==1.8.0
+lightning
 hydra-core
 omegaconf
 numpy
@@ -28,7 +28,7 @@ timm
 imgkit
 pycocotools
 ./procrustes # qc-procrustes
-open3d
+open3d-cpu
 ml_collections
 shapely
 pygifsicle

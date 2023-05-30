@@ -211,7 +211,7 @@ dataloader:
 trainer:
   devices: ${gpus}
   accelerator: gpu
-  strategy: ddp
+  strategy: auto
   deterministic: True
   precision: 16 # 32 # 32 might be needed because embedded features are large (usually in range (-25, 25)).
   max_epochs: 200

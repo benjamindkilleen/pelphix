@@ -11,10 +11,10 @@ from functools import reduce
 import cv2
 from rich.progress import track
 from torch import optim
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import DeviceStatsMonitor
-from pytorch_lightning.callbacks import LearningRateMonitor
-from pytorch_lightning.callbacks import ModelCheckpoint
+import lightning.pytorch as pl
+from lightning.pytorch.callbacks import DeviceStatsMonitor
+from lightning.pytorch.callbacks import LearningRateMonitor
+from lightning.pytorch.callbacks import ModelCheckpoint
 from torchmetrics import Accuracy
 from deepdrr.utils import image_utils
 import pandas as pd
@@ -120,6 +120,8 @@ class PelphixModule(pl.LightningModule):
                 f"{supercategory}_accuracy",
                 Accuracy(task="multiclass", num_classes=num_classes),
             )
+
+        self.test_step_results = []
 
     def forward(
         self,
@@ -575,34 +577,35 @@ class PelphixModule(pl.LightningModule):
             df.to_csv(csv_path, index=False)
             csv_paths.add(csv_path)
 
-        return dict(
+        result = dict(
             csv_paths=csv_paths,
             seq_image_dirs=seq_image_dirs,
             mask_image_dirs=mask_image_dirs,
             heatmap_image_dirs=heatmap_image_dirs,
         )
+        self.test_step_results.append(result)
 
-    def epoch_end(self, outputs, mode: str):
+    def epoch_end(self, mode: str):
         for supercategory in self.supercategories:
             accuracy = getattr(self, f"{supercategory}_accuracy")
             self.log(f"{mode}_accuracy_epoch/{supercategory}", accuracy)
 
-    def training_epoch_end(self, outputs):
-        self.epoch_end(outputs, mode="train")
+    def on_train_epoch_end(self):
+        self.epoch_end(mode="train")
 
-    def validation_epoch_end(self, outputs):
-        self.epoch_end(outputs, mode="val")
+    def on_validation_epoch_end(self):
+        self.epoch_end(mode="val")
 
-    def test_epoch_end(self, results):
-        self.epoch_end(results, mode="test")
+    def on_test_epoch_end(self):
+        self.epoch_end(mode="test")
 
-        csv_paths = reduce(lambda a, b: a | b, [r["csv_paths"] for r in results])
+        csv_paths = reduce(lambda a, b: a | b, [r["csv_paths"] for r in self.test_step_results])
         for csv_path in csv_paths:
             plot_sequence_predictions(csv_path)
             eval_metrics(csv_path)
 
         seq_image_dirs: list[Path] = reduce(
-            lambda a, b: a | b, [r["seq_image_dirs"] for r in results]
+            lambda a, b: a | b, [r["seq_image_dirs"] for r in self.test_step_results]
         )
         for seq_image_dir in seq_image_dirs:
             frames = np.array(
@@ -626,6 +629,8 @@ class PelphixModule(pl.LightningModule):
             for frame in frames:
                 writer.append_data(frame)
             writer.close()
+
+        self.test_step_results.clear()
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), **self.optimizer)

@@ -5,7 +5,7 @@ import logging
 import math
 import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 from torchvision.models import resnet18
 from .unet import UNet
 

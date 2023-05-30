@@ -13,7 +13,7 @@ import hydra
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 import torch
 import matplotlib.pyplot as plt
 from omegaconf import DictConfig
@@ -64,7 +64,8 @@ def train(cfg):
     cfg = cfg.experiment
 
     train_dataset = PerphixSequenceDataset.from_configs(**cfg.sequences_train)
-    counts = train_dataset.get_sequence_counts()
+    # counts = train_dataset.get_sequence_counts()
+    counts = None
     val_dataset = PerphixSequenceDataset.from_configs(**cfg.sequences_val)
 
     train_dataloader = DataLoader(train_dataset, shuffle=True, **cfg.dataloader)

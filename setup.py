@@ -12,7 +12,7 @@ setup(
     install_requires=[
         "torch",
         "torchvision",
-        "pytorch-lightning",
+        "lightning",
         "hydra-core",
         "omegaconf",
         "rich",
