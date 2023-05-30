@@ -1,4 +1,4 @@
-name: MultistepLR
+name: MultiStepLR
 config:
   milestones: [150, 180]
   gamma: 0.1
