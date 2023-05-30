@@ -52,6 +52,8 @@ class PelphixModule(pl.LightningModule):
         transformer: dict[str, Any] = dict(),
         optimizer: dict[str, Any] = dict(),
         scheduler: dict[str, Any] = dict(),
+        use_keypoints: bool = True,
+        use_segmentations: bool = True,
         results_dir: Path = Path("."),
         sequence_counts: Optional[dict[str, np.ndarray]] = None,
         test_dataset: Optional[PerphixContainer] = None,
@@ -84,6 +86,8 @@ class PelphixModule(pl.LightningModule):
             transformer=transformer,
             unet=unet,
         )
+        self.use_keypoints = use_keypoints
+        self.use_segmentations = use_segmentations
 
         # For training.
         self.criteria = nn.ModuleList()
@@ -179,14 +183,16 @@ class PelphixModule(pl.LightningModule):
 
         # Dice loss.
         pred_masks = outputs["masks"]
-        losses["dice"] = self.dice_loss(
-            pred_masks.reshape(S * N, -1, H, W), masks.reshape(S * N, -1, H, W)
-        )
+        if self.use_segmentations:
+            losses["dice"] = self.dice_loss(
+                pred_masks.reshape(S * N, -1, H, W), masks.reshape(S * N, -1, H, W)
+            )
 
         pred_heatmaps = outputs["heatmaps"]
-        losses["heatmap"] = self.heatmap_loss(
-            pred_heatmaps.reshape(S * N, -1, H, W), heatmaps.reshape(S * N, -1, H, W)
-        )
+        if self.use_keypoints:
+            losses["heatmap"] = self.heatmap_loss(
+                pred_heatmaps.reshape(S * N, -1, H, W), heatmaps.reshape(S * N, -1, H, W)
+            )
 
         loss = torch.stack([losses[k] for k in losses]).mean()
         output_dict = dict(loss=loss, losses=losses, **outputs)
@@ -276,7 +282,8 @@ class PelphixModule(pl.LightningModule):
 
         sorted_predictions = []
         for i, pred_label in enumerate(pred_labels):
-            pred_label[0] = 0  # Ignore bg class
+            if not self.training:
+                pred_label[0] = 0  # Ignore bg class
             prediction = np.argsort(to_numpy(pred_label), 2)[:, :, ::-1]
             prediction = prediction.transpose(1, 0, 2)  # (N, S, num_classes)
             sorted_predictions.append(prediction)

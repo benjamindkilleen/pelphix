@@ -82,6 +82,18 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
 - `ckpt=/path/to/last.ckpt` to load a model checkpoint for resuming training or running inference.
 - `gpus=n` to use `n` GPUs.
 
+## Notes
+
+### Model Checkpoints
+
+- Dumbledore: full model
+
+### TODO
+
+- Ablation study on model architecture.
+- Visualization of sim-to-real transfer. (e.g. register real images, get GT annotations, show drop in overall performance)
+- Discussion of training/validation split.
+
 ## Citation
 
 If you found this work useful, please cite [our paper](https://arxiv.org/abs/2304.09285):

@@ -245,6 +245,8 @@ unet_module:
   transformer: ${transformer}
   optimizer: ${optimizer}
   scheduler: ${scheduler}
+  use_keypoints: True
+  use_segmentations: True
 
 unet_image_size: 224
 triplets: True
