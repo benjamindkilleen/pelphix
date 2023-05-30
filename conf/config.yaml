@@ -12,7 +12,7 @@ hydra:
 defaults:
   - _self_ # makes it so the subconfigs override the primary
   - experiment: train
-  - scheduler: plateau
+  - scheduler: step
 
   # Use the configured logging.
   - override hydra/job_logging: rich
@@ -214,7 +214,7 @@ trainer:
   strategy: ddp
   deterministic: True
   precision: 16 # 32 # 32 might be needed because embedded features are large (usually in range (-25, 25)).
-  max_epochs: 10000
+  max_epochs: 200
   gradient_clip_val: 5 # 0.5
   log_every_n_steps: 10
   # find_unused_parameters: False

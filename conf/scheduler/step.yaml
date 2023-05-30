@@ -1,5 +1,5 @@
-name: StepLR
+name: MultistepLR
 config:
-  step_size: 80
+  milestones: [150, 180]
   gamma: 0.1
   
