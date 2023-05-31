@@ -58,7 +58,7 @@ class PelphixUniform(PelphixBase):
         nmdid_root: Union[str, Path],
         pelvis_annotations_dir: Union[str, Path],
         train: bool = True,
-        num_val: int = 10,
+        num_val: int = 32,
         scan_name: str = "THIN_BONE_TORSO",
         image_size: tuple[int, int] = (256, 256),
         overwrite: bool = False,

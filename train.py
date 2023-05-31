@@ -1,33 +1,23 @@
 # !/usr/bin/env python3
 import logging
-import math
 import multiprocessing as mp
 import os
-from pathlib import Path
-from time import time
 
-from typing import Optional, List, Any, Tuple
-from shutil import rmtree
-from scipy.spatial import KDTree
 import hydra
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import deepdrr  # import before lightning
 import lightning.pytorch as pl
 import torch
-import matplotlib.pyplot as plt
 from omegaconf import DictConfig
 from omegaconf import OmegaConf
 from hydra.utils import get_original_cwd
 from rich.traceback import install
 from torch.utils.data import DataLoader
-import scienceplots
-import imageio.v3 as iio
-import imageio
+import scienceplots  # don't remove
 
 # Nosort
-import deepdrr
-import pelphix
 from pelphix.utils.onedrive_utils import OneDrive
 from pelphix.ssm import ssm_build
 from pelphix.sims import PelphixSim
@@ -35,25 +25,21 @@ from perphix.data import (
     PerphixSequenceDataset,
 )
 
+log = logging.getLogger("pelphix")
+log.setLevel(logging.DEBUG)
 
 np.set_printoptions(precision=3, suppress=True, threshold=10000)
+install(show_locals=False)
 
 torch.set_float32_matmul_precision("medium")
 
 # Requires latex
 plt.style.use(["science", "ieee"])
-
-install(show_locals=False)
-
-os.environ["HYDRA_FULL_ERROR"] = "1"
-
+plt.rcParams["font.family"] = "serif"  # "Times New Roman"
 # Use agg backend for plotting when no graphical display available.
 mpl.use("agg")
 
-plt.rcParams["font.family"] = "serif"  # "Times New Roman"
-
-log = logging.getLogger("pelphix")
-log.setLevel(logging.DEBUG)
+os.environ["HYDRA_FULL_ERROR"] = "1"
 
 
 @hydra.main(config_path="conf", config_name="config", version_base="1.1")
