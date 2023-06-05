@@ -87,6 +87,9 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
 ### Model Checkpoints
 
 - Dumbledore: full model
+- Sirius: full model, same as dumbledor, but with scheduler, and no class weighting. (keypoints, segs, etc.)
+- dobby: keypoints=False, segs=True
+- on pacman: hagrid (not yet named) (keypoints=False, segs=False)
 
 ### TODO
 

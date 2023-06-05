@@ -33,8 +33,9 @@ ml_collections
 shapely
 pygifsicle
 imageio[ffmpeg]
+tensorboard
 
-deepdrr==1.1.2
+deepdrr
 -e ./perphix # TODO point to git repo
 
 # development
