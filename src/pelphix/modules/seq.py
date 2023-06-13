@@ -479,8 +479,8 @@ class PelphixModule(pl.LightningModule):
                 ]  # list of (num_classes,) arrays
 
                 # Either filter the predictions or use the raw predictions
-                pred = self.get_filtered_predictions(df, sorted_preds, dataset, image_ids[n, s])
-                # pred = dataset.get_sequence_names_from_labels(predictions[n, s])
+                # pred = self.get_filtered_predictions(df, sorted_preds, dataset, image_ids[n, s])
+                pred = dataset.get_sequence_names_from_labels(predictions[n, s])
 
                 labeled_image = images[n, s].transpose(1, 2, 0).copy()  # (H, W, C)
 
