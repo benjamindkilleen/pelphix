@@ -247,6 +247,7 @@ unet_module:
   scheduler: ${scheduler}
   use_keypoints: True
   use_segmentations: True
+  filter_preds: False
 
 unet_image_size: 224
 triplets: True
@@ -282,12 +283,12 @@ sequences_val:
 
 
 sequences_test:
-  seq_len: ${unet_seq_len} # 300 rather than 100
+  seq_len: ${unet_seq_len} # 300 rather than 100?
   train: false
   image_size: ${unet_image_size}
   fliph: true
   triplets: ${triplets}
-  overlap: 0.1
+  overlap: 0.5
   configs:
     - loader: from_csv
       config:

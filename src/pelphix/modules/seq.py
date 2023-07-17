@@ -22,6 +22,7 @@ from collections import Counter
 import imageio.v3 as iio
 import imageio
 from perphix.data import PerphixDataset, PerphixContainer
+from scipy.ndimage import gaussian_filter, median_filter
 
 from ..plots import plot_sequence_predictions
 from ..metrics import eval_metrics
@@ -57,6 +58,7 @@ class PelphixModule(pl.LightningModule):
         results_dir: Path = Path("."),
         sequence_counts: Optional[dict[str, np.ndarray]] = None,
         test_dataset: Optional[PerphixContainer] = None,
+        filter_preds: bool = False,
     ):
         """Recognition module.
 
@@ -88,6 +90,7 @@ class PelphixModule(pl.LightningModule):
         )
         self.use_keypoints = use_keypoints
         self.use_segmentations = use_segmentations
+        self.filter_preds = filter_preds
 
         # For training.
         self.criteria = nn.ModuleList()
@@ -257,7 +260,20 @@ class PelphixModule(pl.LightningModule):
 
         return outputs
 
-    def _get_predictions(self, pred_labels: list[torch.Tensor]) -> dict[str, np.ndarray]:
+    def _filter_logits(self, pred_logit: np.ndarray) -> np.ndarray:
+        """Apply a filter to the logits.
+
+        Args:
+            pred_logits (np.ndarray): (N, S, num_classes) arrays of logits
+
+        Returns:
+            ndarray: (N, S, num_classes) array of logits
+        """
+
+        pred_logit = median_filter(pred_logit, size=(1, 3, 1), mode="nearest")
+        return pred_logit
+
+    def _get_predictions(self, pred_logits: list[torch.Tensor]) -> dict[str, np.ndarray]:
         """Get predictions from outputs.
         Args:
             pred_labels (list[torch.Tensor]): num_supercategories-list of (N, S, num_classes) arrays of logits
@@ -266,13 +282,17 @@ class PelphixModule(pl.LightningModule):
             ndarray: (N, S, num_supercategories) array of predictions as integers
         """
         predictions = []
-        for i, pred_label in enumerate(pred_labels):
-            prediction = np.argmax(to_numpy(pred_label), 2).transpose(1, 0)  # (N, S)
+        for i, pred_logit in enumerate(pred_logits):
+            pred_logit = to_numpy(pred_logit)
+            if self.filter_preds:
+                pred_logit = self._filter_logits(pred_logit)
+
+            prediction = np.argmax(pred_logit, 2).transpose(1, 0)  # (N, S)
             predictions.append(prediction)
         predictions = np.array(predictions).transpose(1, 2, 0)  # (N, S, num_supercategories)
         return predictions
 
-    def _get_sorted_predictions(self, pred_labels: list[torch.Tensor]) -> list[np.ndarray]:
+    def _get_sorted_predictions(self, pred_logits: list[torch.Tensor]) -> list[np.ndarray]:
         """Get predictions from outputs.
 
         Args:
@@ -283,10 +303,13 @@ class PelphixModule(pl.LightningModule):
         """
 
         sorted_predictions = []
-        for i, pred_label in enumerate(pred_labels):
+        for i, pred_logit in enumerate(pred_logits):
+            pred_logit = to_numpy(pred_logit)
             if not self.training:
-                pred_label[0] = 0  # Ignore bg class
-            prediction = np.argsort(to_numpy(pred_label), 2)[:, :, ::-1]
+                pred_logit[0] = 0  # Ignore bg class
+            if self.filter_preds:
+                pred_logit = self._filter_logits(pred_logit)
+            prediction = np.argsort(pred_logit, 2)[:, :, ::-1]
             prediction = prediction.transpose(1, 0, 2)  # (N, S, num_classes)
             sorted_predictions.append(prediction)
         return sorted_predictions
@@ -312,20 +335,28 @@ class PelphixModule(pl.LightningModule):
         # A task is "done" if a new task has been going for 3 frames
         completed = set()
         prev_task = None
+        prev_task_counter = 0
         counts = Counter()
-        screw_counts = Counter()
-        for task, activity in zip(df["pred_task"], df["pred_activity"]):
+        for task in df["pred_task"]:
             counts[task] += 1
-            if activity == "insert_screw":
-                screw_counts[task] += 1
             if prev_task is None:
                 prev_task = task
                 continue
 
-            if task != prev_task and counts[task] > 3 and screw_counts[task] > 3:
+            if task != prev_task and counts[task] > 2 and counts[prev_task] > 2:
                 completed.add(prev_task)
                 prev_task = task
+            elif task != prev_task and counts[task] > 2:
+                # The prev_task was a blip, so clear the counts for the prev_task.
+                counts[prev_task] = 0
+                prev_task = task
 
+            # if task != prev_task and counts[task] > 3 and counts[prev_task] > 3:
+            #     # So if the new task has been going for 3 frames, we consider the previous task to be done.
+            #     completed.add(prev_task)
+            #     prev_task = task
+
+        # Now, we can filter the predictions by only considering the first prediction that is not done.
         fingers = [0] * len(sorted_preds)
         while all([fingers[i] < len(sorted_preds[i]) - 1 for i in range(len(sorted_preds))]):
             label = np.array([pr[fingers[i]] for i, pr in enumerate(sorted_preds)])
@@ -406,7 +437,7 @@ class PelphixModule(pl.LightningModule):
         supercategory_name_mapping = {
             "task": "Corridor",
             "activity": "Activity",
-            "acquisition": "Target view",
+            "acquisition": "View",
             "frame": "Frame",
         }
 
@@ -469,6 +500,7 @@ class PelphixModule(pl.LightningModule):
                 if image_ids[n, s] in df["Frame Number"].values:
                     # Already processed this image
                     continue
+
                 # subtract bg class
                 gt = dataset.get_sequence_names_from_labels(labels[n, s])
                 # log.debug(f"{image_ids[n, s]:03d}: {labels[n,s]} -> {list(gt.values())}")
@@ -479,8 +511,8 @@ class PelphixModule(pl.LightningModule):
                 ]  # list of (num_classes,) arrays
 
                 # Either filter the predictions or use the raw predictions
-                # pred = self.get_filtered_predictions(df, sorted_preds, dataset, image_ids[n, s])
-                pred = dataset.get_sequence_names_from_labels(predictions[n, s])
+                pred = self.get_filtered_predictions(df, sorted_preds, dataset, image_ids[n, s])
+                # pred = dataset.get_sequence_names_from_labels(predictions[n, s])
 
                 labeled_image = images[n, s].transpose(1, 2, 0).copy()  # (H, W, C)
 
@@ -508,7 +540,7 @@ class PelphixModule(pl.LightningModule):
                 image_name = f"{image_ids[n, s]:09d}.png"
 
                 # Write out the image with sequence labels
-                for i, supercategory in enumerate(self.supercategories):
+                for i, supercategory in enumerate(["task", "activity", "acquisition", "frame"]):
                     y = labeled_image.shape[0] - (vspace * i + margin)
                     supercategory_name = supercategory_name_mapping[supercategory]
                     labeled_image = cv2.putText(
@@ -553,17 +585,18 @@ class PelphixModule(pl.LightningModule):
                 heatmap = heatmaps[n, s].transpose(1, 2, 0)
                 mask = masks[n, s].transpose(1, 2, 0)
 
-                heatmap_image = image_utils.blend_heatmaps(image, heatmap)
-                heatmap_image = np.flip(heatmap_image, 1)
-                heatmap_image = image_utils.as_uint8(heatmap_image)
-                heatmap_image = cv2.resize(heatmap_image, (W, H))
+                # heatmap_image = image_utils.blend_heatmaps(image, heatmap)
+                # heatmap_image = np.flip(heatmap_image, 1)
+                # heatmap_image = image_utils.as_uint8(heatmap_image)
+                # heatmap_image = cv2.resize(heatmap_image, (W, H))
 
-                mask_image = image_utils.draw_masks(image, mask)
-                mask_image = np.flip(mask_image, 1)
-                mask_image = image_utils.as_uint8(mask_image)
-                mask_image = cv2.resize(mask_image, (W, H))
+                # mask_image = image_utils.draw_masks(image, mask)
+                # mask_image = np.flip(mask_image, 1)
+                # mask_image = image_utils.as_uint8(mask_image)
+                # mask_image = cv2.resize(mask_image, (W, H))
 
-                tiled_image = np.concatenate([labeled_image, heatmap_image, mask_image], axis=1)
+                # tiled_image = np.concatenate([labeled_image, heatmap_image, mask_image], axis=1)
+                tiled_image = labeled_image
                 # tiled_image = cv2.cvtColor(tiled_image, cv2.COLOR_RGB2BGR)  # TODO: keep?
                 image_utils.save(image_path, tiled_image)
 
@@ -619,9 +652,9 @@ class PelphixModule(pl.LightningModule):
             dataset_name = dataset_results_dir.parts[-2]
             procedure_idx = int(dataset_results_dir.parts[-1])
 
-            gif_path = dataset_results_dir / f"{dataset_name}_{procedure_idx:09d}_sequences.gif"
-            log.info(f"Writing GIF to {gif_path}...")
-            iio.imwrite(gif_path, frames, duration=500, loop=1)
+            # gif_path = dataset_results_dir / f"{dataset_name}_{procedure_idx:09d}_sequences.gif"
+            # log.info(f"Writing GIF to {gif_path}...")
+            # iio.imwrite(gif_path, frames, duration=500, loop=1)
 
             mp4_path = dataset_results_dir / f"{dataset_name}_{procedure_idx:09d}.mp4"
             log.info(f"Writing MP4 to {mp4_path}...")

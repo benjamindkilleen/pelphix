@@ -28,6 +28,8 @@ def main(source):
 def eval_metrics(source: Path):
     source = Path(source)
     df = pd.read_csv(source)
+    df.fillna("none", inplace=True)
+
     # collapsing s1 predictions
     df.loc[df["pred_task"] == "s1_left", "pred_task"] = "s1"
     df.loc[df["pred_task"] == "s1_right", "pred_task"] = "s1"
