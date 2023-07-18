@@ -326,6 +326,7 @@ class PelphixBase(PerphixBase, Process):
         pelvis_landmarks: dict[str, geo.Point3D],
         image_id: int,
         case_name: str,
+        standard_view_directions: dict[Acquisition, geo.Vector3D] = {},
     ):
         """Simulate a single image and all its spatial annotations.
 
@@ -340,6 +341,8 @@ class PelphixBase(PerphixBase, Process):
             pelvis_landmarks: Mapping from landmark name to the 3D landmark in anatomical coordinates.
             image_id: The image id.
             case_name: The case name for the CT.
+            standard_view_directions: Mapping from view to the standard view direction in world coordinates.
+                For each standard view provided, angle to that view from current view is included in the dataset.
         """
         image = projector()
         index_from_world = device.index_from_world
@@ -373,6 +376,14 @@ class PelphixBase(PerphixBase, Process):
         #     log.debug("No screenshot")
         # plotter.close()
 
+        # Get the angles to the standard views.
+        view_dir = device.principle_ray_in_world
+        standard_view_angles: dict[str, float] = dict()
+        for standard_view, std_view_dir in standard_view_directions.items():
+            standard_view_angles[str(standard_view)] = math.degrees(
+                min(view_dir.angle(std_view_dir), view_dir.angle(-std_view_dir))
+            )
+
         annotation["images"].append(
             {
                 "license": 0,
@@ -385,6 +396,7 @@ class PelphixBase(PerphixBase, Process):
                 "seq_length": -1,  # to be changed
                 "first_frame_id": 0,  # to be changed
                 "case_name": case_name,
+                "standard_view_angles": standard_view_angles,
             }
         )
 

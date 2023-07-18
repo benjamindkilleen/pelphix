@@ -48,11 +48,47 @@ THIRTY_DEGREES = math.radians(30)
 FORTY_FIVE_DEGREES = math.radians(45)
 SIXTY_DEGREES = math.radians(60)
 
+STANDARD_VIEWS = [
+    Acquisition.ap,
+    Acquisition.lateral,
+    Acquisition.inlet,
+    Acquisition.outlet,
+    Acquisition.oblique_left,
+    Acquisition.oblique_right,
+    Acquisition.teardrop_left,
+    Acquisition.teardrop_right,
+]
+
 
 def normalize(x: np.ndarray) -> np.ndarray:
     """Normalize a vector."""
     x = np.array(x)
     return x / np.linalg.norm(x)
+
+
+def solid_angle(theta: np.ndarray) -> np.ndarray:
+    r"""Calculate the solid angle subtended by a cone with apex at the origin.
+
+    The solid angle subtended by a cone with apex at the origin is given by
+
+        A = 2 pi (1 - cos(theta))
+
+    where theta is the half-angle of the cone and.
+
+                /|\
+               / | \
+              /  |_/\
+             /   | th\ r
+            /    |    \
+           /     |     \
+          /      |      \
+          \______|______/ A = r^2
+
+    Args:
+        theta: The half-angle of the cone in radians.
+
+    """
+    return 2 * np.pi * (1 - np.cos(theta))
 
 
 class PelphixUniform(PelphixBase):
@@ -69,13 +105,37 @@ class PelphixUniform(PelphixBase):
         image_size: tuple[int, int] = (256, 256),
         overwrite: bool = False,
         cache_dir: Optional[Union[str, Path]] = None,
-        job_queue: Optional[Queue] = None,
-        finished_queue: Optional[Queue] = None,
         num_workers: int = 0,
         num_samples_per_case: int = 100,
         max_wires: int = 7,
         max_screws: int = 7,
+        center_views: dict[str, float] = {"ap": 75, "lateral": 10},
+        job_queue: Optional[Queue] = None,
+        finished_queue: Optional[Queue] = None,
     ):
+        """Initialize a PelphixUniform object.
+
+        Args:
+            root: The root directory for generating the dataset.
+            nmdid_root: The root directory for the NMDID-ARCADE dataset.
+            pelvis_annotations_dir: The directory containing the pelvis annotations.
+            train: Whether to generate a training or validation dataset. Defaults to True.
+            num_val: The number of validation cases. Defaults to 32.
+            scan_name: The name of the scan to use. Defaults to "THIN_BONE_TORSO".
+            image_size: The size of the images to generate. Defaults to (256, 256).
+            overwrite: Whether to overwrite existing files. Defaults to False.
+            cache_dir: The directory to use for caching. Defaults to None.
+            num_workers: The number of workers to use for generating the dataset. Defaults to 0 (main thread).
+            num_samples_per_case: The number of samples to generate per case. Defaults to 100.
+            max_wires: The maximum number of wires to use. Defaults to 7.
+            max_screws: The maximum number of screws to use. Defaults to 7.
+            center_views: The center views to use for sampling viewing angles, mapped to the
+                half-angle of each cone in degrees. One of these is chosen at random for each
+                sample, with probability proportional to the solid angle subtended by each sampling
+                cone. Defaults to {"ap": 75, "lateral": 10}.
+            job_queue: The queue to use for adding jobs, if this is a process. Don't set this manually.
+            finished_queue: The queue to use for adding finished jobs, if this is a process. Don't set this manually.
+        """
         self.kwargs = locals()
         del self.kwargs["self"]
         del self.kwargs["__class__"]
@@ -100,6 +160,9 @@ class PelphixUniform(PelphixBase):
         self.num_samples_per_case = num_samples_per_case
         self.max_wires = max_wires
         self.max_screws = max_screws
+        self.center_views: dict[Acquisition, float] = dict(
+            (Acquisition(acq), np.radians(theta)) for acq, theta in center_views.items()
+        )
 
         case_names = sorted(
             [
@@ -157,6 +220,7 @@ class PelphixUniform(PelphixBase):
         5. Sample a direction for the view, first by choosing either AP- or lateral-centered (with proportional probabilities),
             then by sampling uniformly on the solid angle about the choice.
         6. Check if we happen to be capturing a standard view. This should be done solely with the relevant corridors/keypoints and the current view, separately for each.
+            Can regress the angle to each standard view separateley, or do multiclass binary classification.
         7. Sample the source-to-patient distance randomly in a reasonable range.
         8. Do the projection and save the image and annotations.
 
@@ -190,6 +254,23 @@ class PelphixUniform(PelphixBase):
         corridor_probabilities = np.array([0.5] + [0.5 / len(corridors)] * len(corridors))
         corridor_names = ["no-corridor"] + list(corridors.keys())
 
+        # Get the views and their probabilities
+        world_from_APP = self.get_APP(pelvis_keypoints=pelvis_landmarks)
+        center_view_directions = dict(
+            (view_name, self.get_view_direction(view_name, world_from_APP, corridors))
+            for view_name in self.center_views
+        )
+        center_views = list(self.center_views.keys())
+        center_view_probabilities = normalize(
+            [solid_angle(self.center_views[view_name]) for view_name in center_views]
+        )
+
+        # Get the standard views and their directions
+        standard_view_directions = dict(
+            (view_name, self.get_view_direction(view_name, world_from_APP, corridors))
+            for view_name in STANDARD_VIEWS
+        )
+
         intensity_upper_bound = np.random.uniform(2, 8)
         projector = Projector(
             [ct, *wires, *screws],
@@ -204,24 +285,32 @@ class PelphixUniform(PelphixBase):
         # Mapping from track id to projector
         # Not really a trackid, but whatever
         seg_projectors: dict[int, Projector] = dict()
+        seg_names: dict[int, str] = dict()
 
         # Add the volumes to the projector
         for seg_name, seg_volume in seg_volumes.items():
             track_id = 1000 * self.get_annotation_catid(seg_name) + 0
             seg_projectors[track_id] = Projector(seg_volume, device=device, neglog=True)
             seg_projectors[track_id].initialize()
+            seg_names[track_id] = seg_name
 
         for wire_idx, wire in enumerate(wires):
             track_id = 1000 * wire_catid + wire_idx
             seg_projectors[track_id] = Projector(wire, device=device, neglog=True)
             seg_projectors[track_id].initialize()
+            seg_names[track_id] = "wire"
 
         for screw_idx, screw in enumerate(screws):
             track_id = 1000 * screw_catid + screw_idx
             seg_projectors[track_id] = Projector(screw, device=device, neglog=True)
             seg_projectors[track_id].initialize()
+            seg_names[track_id] = "screw"
 
+        # Sample the views
         for i in range(self.num_samples_per_case):
+            image_id = i + 1
+            image_path = images_dir / f"{image_id:09d}.png"
+
             # Sample the number of wires and screws
             num_wires = np.random.choice(len(wires) + 1, p=wire_probabilities)
             num_screws = np.random.choice(len(screws) + 1, p=screw_probabilities)
@@ -239,14 +328,56 @@ class PelphixUniform(PelphixBase):
                 screw_dir = geo.random.spherical_uniform()
                 screw.align(screw_tip, screw_tip + screw_dir, progress=0)
 
-            # Sample a corridor
+            # Sample a corridor to center the view on
+            corridor_name = corridors[
+                np.random.choice(len(corridor_probabilities), p=corridor_probabilities)
+            ]
+            if corridor_name == "no-corridor":
+                view_center = self.sample_point(*pelvis_bounds)
+            else:
+                corridor = corridors[corridor_name]
+                view_center = corridor.startpoint.lerp(
+                    corridor.endpoint, np.random.rand()
+                ) + geo.vector(
+                    np.clip(np.random.normal(0, 5, size=3), -15, 15),
+                )
 
-        # TODO: fix cylinder projection so that the circular ends are also projected, possibly by
-        # sampling edge points and taking a convex hull. can use scipy for that, but may be much
-        # faster to figure out which points are actually contributing to the hull, since only those
-        # one side of the edge lines are relevant. Can just add those to the point and return a
-        # polygon instead of a quadrangle. Buttttttt probably doesn't really matter for this
-        # application, and for wire placement, would want to grow the corridor anyway.
+            # Sample a view direction from one of the options in center_views.
+            center_view = np.random.choice(center_views, p=center_view_probabilities)
+            center_view_direction = center_view_directions[center_view]
+            view_dir = geo.random.spherical_uniform(
+                center_view_direction,
+                self.center_views[center_view],
+            )
+
+            # Sample source-to-point distance and up-vector
+            source_to_point_fraction = np.random.uniform(0.5, 0.9)
+            up_vector = geo.random.spherical_uniform(
+                ct.world_from_anatomical @ geo.v(0, 0, 1), math.radians(10)
+            )
+
+            # Set the carm view
+            device.set_view(
+                point=view_center,
+                direction=view_dir,
+                up=up_vector,
+                source_to_point_fraction=source_to_point_fraction,
+            )
+
+            # Render the image and all the segmentations
+            self.project_image(
+                annotation,
+                projector=projector,
+                device=device,
+                image_path=image_path,
+                seg_projectors=seg_projectors,
+                seg_names=seg_names,
+                corridors=corridors,
+                pelvis_landmarks=pelvis_landmarks,
+                image_id=image_id,
+                case_name=case_name,
+                standard_view_directions=standard_view_directions,
+            )
 
     def sample_point(
         self, xmin: float, xmax: float, ymin: float, ymax: float, zmin: float, zmax: float
