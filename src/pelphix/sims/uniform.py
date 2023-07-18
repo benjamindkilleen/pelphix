@@ -49,6 +49,12 @@ FORTY_FIVE_DEGREES = math.radians(45)
 SIXTY_DEGREES = math.radians(60)
 
 
+def normalize(x: np.ndarray) -> np.ndarray:
+    """Normalize a vector."""
+    x = np.array(x)
+    return x / np.linalg.norm(x)
+
+
 class PelphixUniform(PelphixBase):
     """Class for generating uniformly sampled datasets."""
 
@@ -165,16 +171,24 @@ class PelphixUniform(PelphixBase):
 
         # Get the volumes
         ct, seg_volumes, seg_meshes, corridors, pelvis_landmarks = self.load_case(case_name)
-        wires = deepdrr.vol.KWire.from_example()
+        wires = [deepdrr.vol.KWire.from_example() for _ in range(self.max_wires)]
         screw_choices = list(get_screw_choices())
-        screws = []
+        screws: list[Screw] = []
         for screw_idx in range(self.max_screws):
             screw = screw_choices[np.random.choice(len(screw_choices))]
             screws.append(screw)
 
+        seg_meshes_pv: dict[str, pv.PolyData] = {k: v.as_pv() for k, v in seg_meshes.items()}
+        pelvis_mesh_pv: pv.PolyData = (
+            seg_meshes_pv["hip_left"] + seg_meshes_pv["hip_right"] + seg_meshes_pv["sacrum"]
+        )
+        pelvis_bounds = pelvis_mesh_pv.bounds
+
         # Probability for the number of wires and screws
-        wire_probabilities = [0.5] + [0.5 / len(wires)] * len(wires)
-        screw_probabilities = [0.5] + [0.5 / len(screws)] * len(screws)
+        wire_probabilities = np.array([0.5] + [0.5 / len(wires)] * len(wires))
+        screw_probabilities = np.array([0.5] + [0.5 / len(screws)] * len(screws))
+        corridor_probabilities = np.array([0.5] + [0.5 / len(corridors)] * len(corridors))
+        corridor_names = ["no-corridor"] + list(corridors.keys())
 
         intensity_upper_bound = np.random.uniform(2, 8)
         projector = Projector(
@@ -208,7 +222,24 @@ class PelphixUniform(PelphixBase):
             seg_projectors[track_id].initialize()
 
         for i in range(self.num_samples_per_case):
-            pass
+            # Sample the number of wires and screws
+            num_wires = np.random.choice(len(wires) + 1, p=wire_probabilities)
+            num_screws = np.random.choice(len(screws) + 1, p=screw_probabilities)
+
+            # Place screws and wires randomly
+            for wire_idx in range(num_wires):
+                wire = wires[wire_idx]
+                wire_tip = self.sample_point(*pelvis_bounds)
+                wire_dir = geo.random.spherical_uniform()
+                wire.align(wire_tip, wire_tip + wire_dir, progress=0)
+
+            for screw_idx in range(num_screws):
+                screw = screws[screw_idx]
+                screw_tip = self.sample_point(*pelvis_bounds)
+                screw_dir = geo.random.spherical_uniform()
+                screw.align(screw_tip, screw_tip + screw_dir, progress=0)
+
+            # Sample a corridor
 
         # TODO: fix cylinder projection so that the circular ends are also projected, possibly by
         # sampling edge points and taking a convex hull. can use scipy for that, but may be much
@@ -216,6 +247,12 @@ class PelphixUniform(PelphixBase):
         # one side of the edge lines are relevant. Can just add those to the point and return a
         # polygon instead of a quadrangle. Buttttttt probably doesn't really matter for this
         # application, and for wire placement, would want to grow the corridor anyway.
+
+    def sample_point(
+        self, xmin: float, xmax: float, ymin: float, ymax: float, zmin: float, zmax: float
+    ) -> geo.Point3D:
+        """Sample a point uniformly in the given box."""
+        return geo.point(np.random.uniform([xmin, ymin, zmin], [xmax, ymax, zmax]))
 
     def generate(self):
         """Generate the dataset."""

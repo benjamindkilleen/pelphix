@@ -100,7 +100,7 @@ class PelphixBase(PerphixBase, Process):
         Returns:
             Volume: The CT volume.
             dict[str, Volume]: The patient segmentation volumes.
-            dict[str, Mesh]: The patient segmentation meshes.
+            dict[str, Mesh]: The patient segmentation meshes, transformed to world coordinates.
             dict[str, Cylinder]: The corridors, in world coordinates.
             dict[str, geo.Point3D]: The pelvis keypoints in world coordinates.
 
