@@ -89,7 +89,7 @@ class Mesh:
     @classmethod
     def from_pv(cls: Type[Mesh], mesh: pv.PolyData):
         """Make a CovMesh from a pyvista PolyData object."""
-        if not mesh.is_all_triangles():
+        if not mesh.is_all_triangles:
             mesh = mesh.triangulate()
         vertices = np.array(mesh.points)
         faces = np.array(mesh.faces).reshape(-1, 4)[:, 1:]

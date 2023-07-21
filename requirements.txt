@@ -36,7 +36,7 @@ imageio[ffmpeg]
 tensorboard
 
 deepdrr
--e ./perphix # TODO point to git repo
+-e ../perphix # TODO point to git repo
 
 # development
 pre-commit

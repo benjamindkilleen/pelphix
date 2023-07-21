@@ -187,4 +187,4 @@ def get_screw_choices(length: Optional[int] = None) -> set[Type[CannulatedScrew]
         Screw_T16_L120,
         Screw_T16_L130,
     }
-    return set(screw for screw in screws if screw.length_mm() <= length)
+    return set(screw for screw in screws if length is None or screw.length_mm() <= length)

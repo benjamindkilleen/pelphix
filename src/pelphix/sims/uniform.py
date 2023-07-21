@@ -272,6 +272,9 @@ class PelphixUniform(PelphixBase):
         )
 
         intensity_upper_bound = np.random.uniform(2, 8)
+        log.debug(f"ct: {ct}")
+        log.debug(f"wires: {wires}")
+        log.debug(f"screws: {screws}")
         projector = Projector(
             [ct, *wires, *screws],
             device=device,
