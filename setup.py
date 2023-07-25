@@ -23,6 +23,7 @@ setup(
         "strenum",
         "shapely",
         "stringcase",
+        "perphix",
     ],
     packages=find_packages(),
     package_dir={"": "src"},

@@ -28,7 +28,6 @@ timm
 imgkit
 pycocotools
 ./procrustes # qc-procrustes
-# open3d # doesn't work on CentOS
 ml_collections
 shapely
 pygifsicle
