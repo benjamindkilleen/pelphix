@@ -534,11 +534,17 @@ class PelphixUniform(PelphixBase):
                     log.error(f"Image {image_path} does not exist. Skipping.")
                     continue
 
+                image_info["file_name"] = str(new_image_path.name)
+                image_info["first_frame_id"] = first_image_id
+                image_info["id"] = image_id
+                annotation["images"].append(image_info)
+                image_id += 1
+
             for ann in case_annotation["annotations"]:
-                ann["id"] += annotation_id
-                ann["image_id"] += first_image_id + ann["image_id"]
+                ann["id"] = annotation_id
+                ann["image_id"] = first_image_id + ann["image_id"]
                 annotation["annotations"].append(ann)
                 annotation_id += 1
 
         log.info("Saving annotations...")
-        save_json(annotation, self.annotations_dir / f"{self.name}.json")
+        save_json(self.annotations_dir / f"{self.name}.json", annotation)
