@@ -61,9 +61,9 @@ STANDARD_VIEWS = [
 
 
 def normalize(x: np.ndarray) -> np.ndarray:
-    """Normalize a vector."""
+    """Normalize a vector to sum to 1."""
     x = np.array(x)
-    return x / np.linalg.norm(x)
+    return x / np.sum(x)
 
 
 def solid_angle(theta: np.ndarray) -> np.ndarray:
@@ -205,7 +205,13 @@ class PelphixUniform(PelphixBase):
     def get_tmp_images_dir(self, case_name: str) -> Path:
         return self.tmp_dir / case_name
 
-    def sample_case(self, case_name: str):
+    def sample_point(
+        self, xmin: float, xmax: float, ymin: float, ymax: float, zmin: float, zmax: float
+    ) -> geo.Point3D:
+        """Sample a point uniformly in the given box."""
+        return geo.point(np.random.uniform([xmin, ymin, zmin], [xmax, ymax, zmax]))
+
+    def sample_case(self, case_name: str) -> bool:
         """Sample images for a given case.
 
         Beforehand, allocate maximum number of screws (random lengths) and wires,
@@ -239,8 +245,8 @@ class PelphixUniform(PelphixBase):
         screw_choices = list(get_screw_choices())
         screws: list[Screw] = []
         for screw_idx in range(self.max_screws):
-            screw = screw_choices[np.random.choice(len(screw_choices))]
-            screws.append(screw)
+            screw_type = screw_choices[np.random.choice(len(screw_choices))]
+            screws.append(screw_type(density=0.06))
 
         seg_meshes_pv: dict[str, pv.PolyData] = {k: v.as_pv() for k, v in seg_meshes.items()}
         pelvis_mesh_pv: pv.PolyData = (
@@ -272,9 +278,6 @@ class PelphixUniform(PelphixBase):
         )
 
         intensity_upper_bound = np.random.uniform(2, 8)
-        log.debug(f"ct: {ct}")
-        log.debug(f"wires: {wires}")
-        log.debug(f"screws: {screws}")
         projector = Projector(
             [ct, *wires, *screws],
             device=device,
@@ -310,8 +313,11 @@ class PelphixUniform(PelphixBase):
             seg_names[track_id] = "screw"
 
         # Sample the views
-        for i in range(self.num_samples_per_case):
-            image_id = i + 1
+        for image_id in track(
+            range(self.num_samples_per_case),
+            total=self.num_samples_per_case,
+            description=f"Sampling {case_name}...",
+        ):
             image_path = images_dir / f"{image_id:09d}.png"
 
             # Sample the number of wires and screws
@@ -319,34 +325,48 @@ class PelphixUniform(PelphixBase):
             num_screws = np.random.choice(len(screws) + 1, p=screw_probabilities)
 
             # Place screws and wires randomly
-            for wire_idx in range(num_wires):
-                wire = wires[wire_idx]
-                wire_tip = self.sample_point(*pelvis_bounds)
-                wire_dir = geo.random.spherical_uniform()
-                wire.align(wire_tip, wire_tip + wire_dir, progress=0)
+            for wire_idx in range(self.max_wires):
+                if wire_idx < num_wires:
+                    wire = wires[wire_idx]
+                    wire_tip = self.sample_point(*pelvis_bounds)
+                    wire_dir = geo.random.spherical_uniform()
+                    wire.align(wire_tip, wire_tip + wire_dir, progress=0)
+                else:
+                    wire = wires[wire_idx]
+                    wire.place_center(geo.point(999999, 999999, 999999))
 
-            for screw_idx in range(num_screws):
-                screw = screws[screw_idx]
-                screw_tip = self.sample_point(*pelvis_bounds)
-                screw_dir = geo.random.spherical_uniform()
-                screw.align(screw_tip, screw_tip + screw_dir, progress=0)
+            for screw_idx in range(self.max_screws):
+                if screw_idx < num_screws:
+                    screw = screws[screw_idx]
+                    screw_tip = self.sample_point(*pelvis_bounds)
+                    screw_dir = geo.random.spherical_uniform()
+                    screw.align(screw_tip, screw_tip + screw_dir, progress=0)
+                else:
+                    screw = screws[screw_idx]
+                    screw.place_center(geo.point(999999, 999999, 999999))
 
             # Sample a corridor to center the view on
-            corridor_name = corridors[
-                np.random.choice(len(corridor_probabilities), p=corridor_probabilities)
-            ]
+            corridor_name = np.random.choice(corridor_names, p=corridor_probabilities)
+            log.info(f"({image_id}) Selected corridor: {corridor_name}")
             if corridor_name == "no-corridor":
+                log.debug(f"pelvis_bounds: {pelvis_bounds}")
                 view_center = self.sample_point(*pelvis_bounds)
+                log.debug(f"sampled view_center from no-corridor: {view_center}")
+
             else:
                 corridor = corridors[corridor_name]
                 view_center = corridor.startpoint.lerp(
-                    corridor.endpoint, np.random.rand()
+                    corridor.endpoint, np.random.uniform(0, 1)
                 ) + geo.vector(
                     np.clip(np.random.normal(0, 5, size=3), -15, 15),
                 )
+                log.debug(f"sampled view_center from {corridor_name}: {view_center}")
+
+            # TODO: figure out why black images
 
             # Sample a view direction from one of the options in center_views.
             center_view = np.random.choice(center_views, p=center_view_probabilities)
+            log.info(f"({image_id}) Selected center view: {center_view}")
             center_view_direction = center_view_directions[center_view]
             view_dir = geo.random.spherical_uniform(
                 center_view_direction,
@@ -382,17 +402,41 @@ class PelphixUniform(PelphixBase):
                 standard_view_directions=standard_view_directions,
             )
 
-    def sample_point(
-        self, xmin: float, xmax: float, ymin: float, ymax: float, zmin: float, zmax: float
-    ) -> geo.Point3D:
-        """Sample a point uniformly in the given box."""
-        return geo.point(np.random.uniform([xmin, ymin, zmin], [xmax, ymax, zmax]))
+        # Save the annotation
+        save_json(annotation_path, annotation)
+
+        return True
+
+    def run(self):
+        """While there are procedures to be done, run them.
+
+        Reads a procedure_idx from the queue and samples to the procedure."""
+
+        while True:
+            try:
+                case_idx = self.job_queue.get(block=False)
+                if case_idx is None:
+                    return
+
+                success = self.sample_case(case_idx)
+
+                if success:
+                    self.finished_queue.put(case_idx)
+                else:
+                    self.job_queue.put(case_idx)
+            except Empty:
+                return
+            except KeyboardInterrupt:
+                return
+            except Exception as e:
+                log.exception(e)
+                raise e
 
     def generate(self):
         """Generate the dataset."""
 
         tmp_annotation_paths = sorted(list(self.tmp_dir.glob("*.json")))
-        cases_done = set(int(p.stem) for p in tmp_annotation_paths)
+        cases_done = set(p.stem for p in tmp_annotation_paths)
 
         if self.overwrite:
             if cases_done:

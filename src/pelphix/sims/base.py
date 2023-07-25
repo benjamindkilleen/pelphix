@@ -184,9 +184,8 @@ class PelphixBase(PerphixBase, Process):
         mesh_dir = self.nmdid_root / "TotalSegmentator_mesh" / self.scan_name / case_name
         seg_meshes: dict[str, Mesh] = {}
         for name in track(seg_volumes, description="Loading segmentations..."):
-            seg_meshes[name] = Mesh.from_file(mesh_dir / f"{name}.stl")
-            seg_meshes[name].transform(ct.world_from_anatomical @ geo.RAS_from_LPS)
-            # seg_meshes[name].transform(ct.world_from_anatomical)
+            mesh = Mesh.from_file(mesh_dir / f"{name}.stl")
+            seg_meshes[name] = mesh.transform(ct.world_from_anatomical @ geo.RAS_from_LPS)
 
         corridors: dict[str, Cylinder] = dict()
         pelvis_keypoints: dict[str, geo.Point3D] = dict()
