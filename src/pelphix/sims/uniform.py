@@ -14,8 +14,6 @@ from gpustat import print_gpustat
 from collections import Counter
 import deepdrr
 from deepdrr import geo, Volume
-from deepdrr.device import SimpleDevice
-from deepdrr.utils import data_utils, image_utils
 from deepdrr import Projector
 import re
 import logging
