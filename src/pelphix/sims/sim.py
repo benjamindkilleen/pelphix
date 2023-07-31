@@ -134,7 +134,6 @@ class PelphixSim(PelphixBase, Process):
             root=root,
             nmdid_root=nmdid_root,
             pelvis_annotations_dir=pelvis_annotations_dir,
-            train=train,
             num_val=num_val,
             scan_name=scan_name,
             image_size=image_size,
@@ -142,6 +141,7 @@ class PelphixSim(PelphixBase, Process):
             cache_dir=cache_dir,
         )
 
+        self.train = train
         self.job_queue = job_queue
         self.finished_queue = finished_queue
         self.corridor_radii = corridor_radii

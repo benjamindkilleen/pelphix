@@ -55,7 +55,6 @@ class PelphixBase(PerphixBase, Process):
         root: Union[str, Path],
         nmdid_root: Union[str, Path],
         pelvis_annotations_dir: Union[str, Path],
-        train: bool = True,
         num_val: int = 10,
         scan_name: str = "THIN_BONE_TORSO",
         image_size: tuple[int, int] = (256, 256),
@@ -67,7 +66,6 @@ class PelphixBase(PerphixBase, Process):
         self.nmdid_root = Path(nmdid_root).expanduser()
         self.pelvis_annotations_dir = Path(pelvis_annotations_dir).expanduser()
         self.num_val = num_val
-        self.train = train
         self.scan_name = scan_name
         self.image_size = tuple(image_size)
         self.overwrite = overwrite

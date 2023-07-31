@@ -90,14 +90,20 @@ def solid_angle(theta: np.ndarray) -> np.ndarray:
 
 
 class PelphixUniform(PelphixBase):
-    """Class for generating uniformly sampled datasets."""
+    """Class for generating uniformly sampled datasets.
+
+    An individual dataset for each case is created, for convenience of splitting later on without
+    having to load the whole JSON.
+
+    May be joined using a Container.
+
+    """
 
     def __init__(
         self,
         root: Union[str, Path],
         nmdid_root: Union[str, Path],
         pelvis_annotations_dir: Union[str, Path],
-        train: bool = True,
         num_val: int = 32,
         scan_name: str = "THIN_BONE_TORSO",
         image_size: tuple[int, int] = (256, 256),
@@ -144,7 +150,6 @@ class PelphixUniform(PelphixBase):
             root=root,
             nmdid_root=nmdid_root,
             pelvis_annotations_dir=pelvis_annotations_dir,
-            train=train,
             num_val=num_val,
             scan_name=scan_name,
             image_size=image_size,
@@ -162,46 +167,33 @@ class PelphixUniform(PelphixBase):
             (Acquisition(acq), np.radians(theta)) for acq, theta in center_views.items()
         )
 
-        case_names = sorted(
+        self.case_names = sorted(
             [
                 case.name
                 for case in self.pelvis_annotations_dir.glob("case-*/")
                 if re.match(self.CASE_PATTERN, case.name) is not None
             ]
         )
-        num_images = len(case_names) * self.num_samples_per_case
-        if self.train:
-            self.name = f"pelphix-uniform_{num_images // 1000:03d}k_train"
-            self.case_names = case_names[: -self.num_val]
-        else:
-            self.name = f"pelphix-uniform_{num_images // 1000:03d}k_val"
-            self.case_names = case_names[-self.num_val :]
-
+        num_images = len(self.case_names) * self.num_samples_per_case
+        self.name = f"pelphix-uniform_{num_images // 1000:03d}k"
         self.num_cases = len(self.case_names)
         self.num_images = self.num_cases * self.num_samples_per_case
         log.info(f"{self.name}: {self.num_cases} cases, {self.num_images} images")
 
-        self.annotations_dir = self.root / "annotations"
-        self.images_dir = self.root / self.name
-        self.tmp_dir = self.root / f"tmp_{self.name}"
-
-        self.annotations_dir.mkdir(parents=True, exist_ok=True)
-        self.images_dir.mkdir(parents=True, exist_ok=True)
-        self.tmp_dir.mkdir(parents=True, exist_ok=True)
+        self.data_dir = self.root / f"{self.name}"
+        self.data_dir.mkdir(parents=True, exist_ok=True)
 
         # Don't sync the images directory.
-        (self.annotations_dir / ".nosync").touch()
-        (self.images_dir / ".nosync").touch()
-        (self.tmp_dir / ".nosync").touch()
+        (self.data_dir / ".nosync").touch()
 
     # TODO: sample_case(), generate(), and run() methods. Pretty simple. Have to sample more often
     # around AP than lateral. Base it off of solid angle.
 
-    def get_tmp_annotation_path(self, case_name: str) -> Path:
-        return self.tmp_dir / f"{case_name}.json"
+    def get_case_annotation_path(self, case_name: str) -> Path:
+        return self.data_dir / f"{case_name}.json"
 
-    def get_tmp_images_dir(self, case_name: str) -> Path:
-        return self.tmp_dir / case_name
+    def get_case_images_dir(self, case_name: str) -> Path:
+        return self.data_dir / case_name
 
     def sample_point(
         self, xmin: float, xmax: float, ymin: float, ymax: float, zmin: float, zmax: float
@@ -229,9 +221,9 @@ class PelphixUniform(PelphixBase):
         8. Do the projection and save the image and annotations.
 
         """
-        annotation_path = self.get_tmp_annotation_path(case_name)
+        annotation_path = self.get_case_annotation_path(case_name)
         annotation = self.get_base_annotation()
-        images_dir = self.get_tmp_images_dir(case_name)
+        images_dir = self.get_case_images_dir(case_name)
 
         device = self.sample_device()
         wire_catid = self.get_annotation_catid("wire")
@@ -372,7 +364,7 @@ class PelphixUniform(PelphixBase):
             )
 
             # Sample source-to-point distance and up-vector
-            source_to_point_fraction = np.random.uniform(0.5, 0.9)
+            source_to_point_fraction = np.random.uniform(0.7, 0.9)
             up_vector = geo.random.spherical_uniform(
                 ct.world_from_anatomical @ geo.v(0, 0, 1), math.radians(10)
             )
@@ -433,8 +425,8 @@ class PelphixUniform(PelphixBase):
     def generate(self):
         """Generate the dataset."""
 
-        tmp_annotation_paths = sorted(list(self.tmp_dir.glob("*.json")))
-        cases_done = set(p.stem for p in tmp_annotation_paths)
+        annotation_paths = sorted(list(self.data_dir.glob("*.json")))
+        cases_done = set(p.stem for p in annotation_paths)
 
         if self.overwrite:
             if cases_done:
@@ -444,9 +436,9 @@ class PelphixUniform(PelphixBase):
                 input("Press ENTER to overwrite.")
 
             cases_done = set()
-            shutil.rmtree(self.tmp_dir)
+            shutil.rmtree(self.data_dir)
             shutil.rmtree(self.images_dir)
-            self.tmp_dir.mkdir(parents=True, exist_ok=True)
+            self.data_dir.mkdir(parents=True, exist_ok=True)
             self.images_dir.mkdir(parents=True, exist_ok=True)
         elif len(cases_done) > 0:
             log.info(f"Skipping {len(cases_done)} existing cases.")
@@ -504,45 +496,45 @@ class PelphixUniform(PelphixBase):
 
         log.info(f"Finished generating images for {self.num_cases} cases. Starting cleanup...")
 
-        image_id = 0
-        annotation_id = 0
-        annotation = self.get_base_annotation()
+        # image_id = 0
+        # annotation_id = 0
+        # annotation = self.get_base_annotation()
 
-        for case_annotation_path in track(
-            list(self.tmp_dir.glob("*.json")), description="Merging annotations...."
-        ):
-            case_annotation = load_json(case_annotation_path)
-            case_name = case_annotation_path.stem
-            case_images_dir = self.tmp_dir / case_name
+        # for case_annotation_path in track(
+        #     list(self.tmp_dir.glob("*.json")), description="Merging annotations...."
+        # ):
+        #     case_annotation = load_json(case_annotation_path)
+        #     case_name = case_annotation_path.stem
+        #     case_images_dir = self.tmp_dir / case_name
 
-            if not case_images_dir.exists():
-                log.warning(f"Case {case_name} does not exist. Skipping.")
-                continue
+        #     if not case_images_dir.exists():
+        #         log.warning(f"Case {case_name} does not exist. Skipping.")
+        #         continue
 
-            first_image_id = image_id
+        #     first_image_id = image_id
 
-            for image_info in case_annotation["images"]:
-                image_path = case_images_dir / str(image_info["file_name"])
-                new_image_path = self.images_dir / f"{case_name}_{image_info['file_name']}"
-                if image_path.exists() and not new_image_path.exists():
-                    shutil.copy(image_path, new_image_path)
-                elif new_image_path.exists():
-                    pass
-                else:
-                    log.error(f"Image {image_path} does not exist. Skipping.")
-                    continue
+        #     for image_info in case_annotation["images"]:
+        #         image_path = case_images_dir / str(image_info["file_name"])
+        #         new_image_path = self.images_dir / f"{case_name}_{image_info['file_name']}"
+        #         if image_path.exists() and not new_image_path.exists():
+        #             shutil.copy(image_path, new_image_path)
+        #         elif new_image_path.exists():
+        #             pass
+        #         else:
+        #             log.error(f"Image {image_path} does not exist. Skipping.")
+        #             continue
 
-                image_info["file_name"] = str(new_image_path.name)
-                image_info["first_frame_id"] = first_image_id
-                image_info["id"] = image_id
-                annotation["images"].append(image_info)
-                image_id += 1
+        #         image_info["file_name"] = str(new_image_path.name)
+        #         image_info["first_frame_id"] = first_image_id
+        #         image_info["id"] = image_id
+        #         annotation["images"].append(image_info)
+        #         image_id += 1
 
-            for ann in case_annotation["annotations"]:
-                ann["id"] = annotation_id
-                ann["image_id"] = first_image_id + ann["image_id"]
-                annotation["annotations"].append(ann)
-                annotation_id += 1
+        #     for ann in case_annotation["annotations"]:
+        #         ann["id"] = annotation_id
+        #         ann["image_id"] = first_image_id + ann["image_id"]
+        #         annotation["annotations"].append(ann)
+        #         annotation_id += 1
 
-        log.info("Saving annotations...")
-        save_json(self.annotations_dir / f"{self.name}.json", annotation)
+        # log.info("Saving annotations...")
+        # save_json(self.annotations_dir / f"{self.name}.json", annotation)
