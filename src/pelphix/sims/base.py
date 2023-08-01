@@ -16,6 +16,7 @@ import math
 import time
 from multiprocessing import Process
 import logging
+import pyvista as pv
 
 from perphix.data import PerphixBase
 from perphix.utils import vis_utils
@@ -344,15 +345,17 @@ class PelphixBase(PerphixBase, Process):
         image = projector()
         index_from_world = device.index_from_world
 
-        # # Plot the wire and screw.
-        # plotter = pv.Plotter(off_screen=True, window_size=(1536, 2048))
-        # plotter.set_background("white")
-        # plotter.add_mesh(device.get_mesh_in_world(), color="black", opacity=1)
-        # for volume in seg_volumes.values():
-        #     plotter.add_mesh(volume.get_mesh_in_world(full=False), color="black", opacity=1)
-        # x_axis = ct.anatomical_from_world @ geo.v(1, 0, 0)
-        # y_axis = ct.anatomical_from_world @ geo.v(0, 1, 0)
-        # z_axis = ct.anatomical_from_world @ geo.v(0, 0, 1)
+        # Plot the wire and screw.
+        ct = projector.volumes[0]
+        plotter = pv.Plotter(off_screen=True, window_size=(1536, 2048))
+        plotter.set_background("white")
+        plotter.add_mesh(device.get_mesh_in_world(), color="black", opacity=1)
+        for seg_projector in seg_projectors.values():
+            volume = seg_projector.volumes[0]
+            plotter.add_mesh(volume.get_mesh_in_world(full=False), color="black", opacity=1)
+        x_axis = ct.anatomical_from_world @ geo.v(1, 0, 0)
+        y_axis = ct.anatomical_from_world @ geo.v(0, 1, 0)
+        z_axis = ct.anatomical_from_world @ geo.v(0, 0, 1)
         # plotter.add_mesh(pv.Line(desired_view.p, desired_view.p + 100 * x_axis), color="red")
         # plotter.add_mesh(pv.Line(desired_view.p, desired_view.p + 100 * y_axis), color="green")
         # plotter.add_mesh(pv.Line(desired_view.p, desired_view.p + 100 * z_axis), color="blue")
@@ -360,18 +363,19 @@ class PelphixBase(PerphixBase, Process):
         #     pv.Line(desired_view.p, desired_view.p + 100 * desired_view.n), color="yellow"
         # )
         # plotter.set_position(desired_view.p + geo.v(0, 200, -300))
+        plotter.set_focus(list(ct.center_in_world))
         # plotter.set_focus(desired_view.p)
-        # plotter.set_viewup(list(ct.world_from_anatomical @ geo.v(0, 1, 0)))
-        # # screenshot = plotter.show(screenshot=True)
-        # screenshot = plotter.screenshot(return_img=True)
-        # if screenshot is not None:
-        #     image_utils.save(
-        #         images_dir / f"{image_path.stem}_screenshot.png",
-        #         screenshot,
-        #     )
-        # else:
-        #     log.debug("No screenshot")
-        # plotter.close()
+        plotter.set_viewup(list(ct.world_from_anatomical @ geo.v(0, 1, 0)))
+        # screenshot = plotter.show(screenshot=True)
+        screenshot = plotter.screenshot(return_img=True)
+        if screenshot is not None:
+            image_utils.save(
+                images_dir / f"{image_path.stem}_screenshot.png",
+                screenshot,
+            )
+        else:
+            log.debug("No screenshot")
+        plotter.close()
 
         # Get the angles to the standard views.
         view_dir = device.principle_ray_in_world

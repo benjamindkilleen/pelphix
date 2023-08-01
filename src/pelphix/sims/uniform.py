@@ -123,7 +123,6 @@ class PelphixUniform(PelphixBase):
             root: The root directory for generating the dataset.
             nmdid_root: The root directory for the NMDID-ARCADE dataset.
             pelvis_annotations_dir: The directory containing the pelvis annotations.
-            train: Whether to generate a training or validation dataset. Defaults to True.
             num_val: The number of validation cases. Defaults to 32.
             scan_name: The name of the scan to use. Defaults to "THIN_BONE_TORSO".
             image_size: The size of the images to generate. Defaults to (256, 256).
@@ -249,6 +248,12 @@ class PelphixUniform(PelphixBase):
         screw_probabilities = np.array([0.5] + [0.5 / len(screws)] * len(screws))
         corridor_probabilities = np.array([0.5] + [0.5 / len(corridors)] * len(corridors))
         corridor_names = ["no-corridor"] + list(corridors.keys())
+        wire_corridor_probabilities = np.array([0.1] + [0.9 / len(corridors)] * len(corridors))
+        wire_corridor_names = ["no-corridor"] + list(corridors.keys())
+        screw_corridor_probabilities = np.array(
+            [0.1, 0.2] + [0.7 / len(corridors)] * len(corridors)
+        )
+        screw_corridor_names = ["no-corridor", "random-wire"] + list(corridors.keys())
 
         # Get the views and their probabilities
         world_from_APP = self.get_APP(pelvis_keypoints=pelvis_landmarks)
@@ -312,28 +317,81 @@ class PelphixUniform(PelphixBase):
 
             # Sample the number of wires and screws
             num_wires = np.random.choice(len(wires) + 1, p=wire_probabilities)
-            num_screws = np.random.choice(len(screws) + 1, p=screw_probabilities)
+
+            # No more screws than wires
+            num_screws = max(np.random.choice(len(screws) + 1, p=screw_probabilities), num_wires)
 
             # Place screws and wires randomly
+            wires_placed = set()
             for wire_idx in range(self.max_wires):
-                if wire_idx < num_wires:
-                    wire = wires[wire_idx]
+                wire = wires[wire_idx]
+                wires_placed.add(wire_idx)
+                if wire_idx >= num_wires:
+                    wire.place_center(geo.point(999999, 999999, 999999))
+                    continue
+
+                # Choose a corridor for the wire
+                corridor_name = np.random.choice(wire_corridor_names, p=wire_corridor_probabilities)
+                if corridor_name == "no-corridor":
                     wire_tip = self.sample_point(*pelvis_bounds)
                     wire_dir = geo.random.spherical_uniform()
                     wire.align(wire_tip, wire_tip + wire_dir, progress=0)
                 else:
-                    wire = wires[wire_idx]
-                    wire.place_center(geo.point(999999, 999999, 999999))
+                    corridor = corridors[corridor_name]
+                    if (
+                        corridor_name in [Task.ramus_left, Task.ramus_right, Task.s1, Task.s2]
+                        and np.random.rand() < 0.5
+                    ):
+                        # Flip the corridor
+                        corridor = corridor.flip()
+                    wire_tip = corridor.startpoint + geo.v(
+                        np.clip(np.random.normal(0, 3, size=3), -10, 10)
+                    )
+                    wire_dir = geo.random.spherical_uniform(
+                        center=corridor.get_direction(),
+                        d_phi=math.radians(15),
+                    )
+                    wire.align(wire_tip, wire_tip + wire_dir, progress=0)
 
             for screw_idx in range(self.max_screws):
-                if screw_idx < num_screws:
-                    screw = screws[screw_idx]
+                screw = screws[screw_idx]
+                if screw_idx >= num_screws:
+                    screw.place_center(geo.point(999999, 999999, 999999))
+                    continue
+
+                # Choose a corridor for the screw
+                corridor_name = np.random.choice(corridor_names, p=corridor_probabilities)
+                if corridor_name == "no-corridor":
                     screw_tip = self.sample_point(*pelvis_bounds)
                     screw_dir = geo.random.spherical_uniform()
                     screw.align(screw_tip, screw_tip + screw_dir, progress=0)
+                elif corridor_name == "random-wire" and len(wires_placed) > 0:
+                    wire_idx = np.random.choice(list(wires_placed))
+                    wires_placed.remove(wire_idx)
+                    wire = wires[wire_idx]
+                    screw_tip = wire.tip_in_world
+                    screw_dir = geo.random.spherical_uniform(
+                        center=wire.get_direction(),
+                        d_phi=math.radians(15),
+                    )
+                    progress = np.random.uniform(-0.1, 0.99)
+                    screw.align(screw_tip, screw_tip + screw_dir, progress=progress)
                 else:
-                    screw = screws[screw_idx]
-                    screw.place_center(geo.point(999999, 999999, 999999))
+                    corridor = corridors[corridor_name]
+                    if (
+                        corridor_name in [Task.ramus_left, Task.ramus_right, Task.s1, Task.s2]
+                        and np.random.rand() < 0.5
+                    ):
+                        # Flip the corridor
+                        corridor = corridor.flip()
+                    screw_tip = corridor.startpoint + geo.v(
+                        np.clip(np.random.normal(0, 3, size=3), -10, 10)
+                    )
+                    screw_dir = geo.random.spherical_uniform(
+                        center=corridor.get_direction(),
+                        d_phi=math.radians(15),
+                    )
+                    screw.align(screw_tip, screw_tip + screw_dir, progress=0)
 
             # Sample a corridor to center the view on
             corridor_name = np.random.choice(corridor_names, p=corridor_probabilities)
@@ -364,7 +422,7 @@ class PelphixUniform(PelphixBase):
             )
 
             # Sample source-to-point distance and up-vector
-            source_to_point_fraction = np.random.uniform(0.7, 0.9)
+            source_to_point_fraction = np.random.uniform(0.5, 0.8)
             up_vector = geo.random.spherical_uniform(
                 ct.world_from_anatomical @ geo.v(0, 0, 1), math.radians(10)
             )
@@ -437,9 +495,7 @@ class PelphixUniform(PelphixBase):
 
             cases_done = set()
             shutil.rmtree(self.data_dir)
-            shutil.rmtree(self.images_dir)
             self.data_dir.mkdir(parents=True, exist_ok=True)
-            self.images_dir.mkdir(parents=True, exist_ok=True)
         elif len(cases_done) > 0:
             log.info(f"Skipping {len(cases_done)} existing cases.")
         else:
