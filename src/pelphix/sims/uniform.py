@@ -351,7 +351,8 @@ class PelphixUniform(PelphixBase):
                         center=corridor.get_direction(),
                         d_phi=math.radians(15),
                     )
-                    wire.align(wire_tip, wire_tip + wire_dir, progress=0)
+                    progress = np.random.uniform(-0.1, 0.99)
+                    wire.align(wire_tip, wire_tip + wire_dir, progress=progress)
 
             for screw_idx in range(self.max_screws):
                 screw = screws[screw_idx]
@@ -448,6 +449,7 @@ class PelphixUniform(PelphixBase):
                 image_id=image_id,
                 case_name=case_name,
                 standard_view_directions=standard_view_directions,
+                # desired_view=geo.ray(view_center, view_dir), # displays pyvista window.
             )
 
         # Save the annotation
