@@ -396,7 +396,7 @@ class PelphixUniform(PelphixBase):
 
             # Sample a corridor to center the view on
             corridor_name = np.random.choice(corridor_names, p=corridor_probabilities)
-            log.info(f"({image_id}) Selected corridor: {corridor_name}")
+            # log.info(f"({image_id}) Selected corridor: {corridor_name}")
             if corridor_name == "no-corridor":
                 log.debug(f"pelvis_bounds: {pelvis_bounds}")
                 view_center = self.sample_point(*pelvis_bounds)
@@ -415,7 +415,7 @@ class PelphixUniform(PelphixBase):
 
             # Sample a view direction from one of the options in center_views.
             center_view = np.random.choice(center_views, p=center_view_probabilities)
-            log.info(f"({image_id}) Selected center view: {center_view}")
+            # log.info(f"({image_id}) Selected center view: {center_view}")
             center_view_direction = center_view_directions[center_view]
             view_dir = geo.random.spherical_uniform(
                 center_view_direction,
