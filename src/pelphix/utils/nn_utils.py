@@ -345,7 +345,7 @@ def detect_landmark(
 
     elif isinstance(centers, list) and len(centers) > 0:
         if len(centers) > 30:
-            log.warning("too many landmarks (model likely not trained)")
+            log.debug("too many landmarks (model likely not trained)")
             return None
         log.debug(f"Found multiple landmarks: {centers}")
         cs = np.array(centers)
@@ -361,6 +361,47 @@ def detect_landmark(
         return max_c
     else:
         return None
+
+
+def detect_landmarks(
+    heatmaps: np.ndarray,
+    order: str = "ij",
+) -> np.ndarray:
+    """Detect landmarks in heatmaps.
+
+    Args:
+        heatmaps (np.ndarray): A 3D array of shape `[N, H, W]`.
+        order (str, optional): The format of the output. Can be "ij" or "xy". Defaults to "ij".
+
+    Returns:
+        np.ndarray: An array of shape `[N, 2]` with the (i,j) coordinates of the landmarks.
+    """
+
+    num_keypoints, H, W = heatmaps.shape
+    keypoint_preds = np.zeros((num_keypoints, 2), dtype=np.float32)
+    for k in range(num_keypoints):
+        heatmap = heatmaps[k]
+        keypoint = detect_landmark(heatmap)
+        if keypoint is None:
+            continue
+        x, y = keypoint
+        if not (0 <= x < W and 0 <= y < H):
+            continue
+
+        keypoint_pred_ij = detect_landmark(heatmap)
+        if keypoint_pred_ij is None:
+            continue
+
+        if order == "xy":
+            keypoint_pred = np.array([keypoint_pred_ij[1], keypoint_pred_ij[0]])
+        elif order == "ij":
+            keypoint_pred = keypoint_pred_ij
+        else:
+            raise ValueError(f"Invalid order: {order}")
+
+        keypoint_preds[k] = keypoint_pred
+
+    return keypoint_preds
 
 
 n = 0
