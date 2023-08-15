@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 import lightning.pytorch as pl
 from torchvision.models import resnet18
+from hydra.utils import instantiate
 from .unet import UNet
 
 log = logging.getLogger(__name__)
@@ -222,7 +223,8 @@ class UNetTransformer(nn.Module):
         self.num_seg_classes = num_seg_classes
         self.num_keypoints = num_keypoints
         output_channels = num_seg_classes + num_keypoints
-        self.unet = UNet(num_classes=output_channels, **unet)
+        self.unet = instantiate(unet, num_classes=output_channels)
+        # self.unet = UNet(num_classes=output_channels, **unet)
 
         self.encoder = nn.Sequential(
             nn.Conv2d(self.unet.feats, d_model, 1),
@@ -230,6 +232,12 @@ class UNetTransformer(nn.Module):
             nn.ReLU(),
             nn.AdaptiveAvgPool2d((1, 1)),
         )
+        # else:
+        #     self.encoder = nn.Sequential(
+        #         nn.Linear(self.unet.feats, d_model, 1),
+        #         nn.BatchNorm1d(d_model),
+        #         nn.ReLU(),
+        #     )
 
     def forward(
         self,

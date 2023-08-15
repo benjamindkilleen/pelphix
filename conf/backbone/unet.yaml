@@ -1,0 +1,3 @@
+_target_: pelphix.models.unet.UNet
+num_layers: 5
+features_start: 64

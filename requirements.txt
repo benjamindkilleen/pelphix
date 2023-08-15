@@ -33,6 +33,7 @@ shapely
 pygifsicle
 imageio[ffmpeg]
 tensorboard
+einops
 
 deepdrr
 -e ../perphix # TODO point to git repo

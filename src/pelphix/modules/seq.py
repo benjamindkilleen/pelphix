@@ -23,6 +23,7 @@ import imageio.v3 as iio
 import imageio
 from perphix.data import PerphixDataset, PerphixContainer
 from scipy.ndimage import gaussian_filter, median_filter
+from hydra.utils import instantiate
 
 from ..plots import plot_sequence_predictions
 from ..metrics import eval_metrics
@@ -49,7 +50,7 @@ class PelphixModule(pl.LightningModule):
         supercategory_num_classes: list[int],
         num_seg_classes: int,
         num_keypoints: int,
-        unet: dict[str, Any],
+        unet: dict[str, Any] = dict(),
         transformer: dict[str, Any] = dict(),
         optimizer: dict[str, Any] = dict(),
         scheduler: dict[str, Any] = dict(),
@@ -585,18 +586,18 @@ class PelphixModule(pl.LightningModule):
                 heatmap = heatmaps[n, s].transpose(1, 2, 0)
                 mask = masks[n, s].transpose(1, 2, 0)
 
-                # heatmap_image = image_utils.blend_heatmaps(image, heatmap)
-                # heatmap_image = np.flip(heatmap_image, 1)
-                # heatmap_image = image_utils.as_uint8(heatmap_image)
-                # heatmap_image = cv2.resize(heatmap_image, (W, H))
+                heatmap_image = image_utils.blend_heatmaps(image, heatmap)
+                heatmap_image = np.flip(heatmap_image, 1)
+                heatmap_image = image_utils.as_uint8(heatmap_image)
+                heatmap_image = cv2.resize(heatmap_image, (W, H))
 
-                # mask_image = image_utils.draw_masks(image, mask)
-                # mask_image = np.flip(mask_image, 1)
-                # mask_image = image_utils.as_uint8(mask_image)
-                # mask_image = cv2.resize(mask_image, (W, H))
+                mask_image = image_utils.draw_masks(image, mask)
+                mask_image = np.flip(mask_image, 1)
+                mask_image = image_utils.as_uint8(mask_image)
+                mask_image = cv2.resize(mask_image, (W, H))
 
-                # tiled_image = np.concatenate([labeled_image, heatmap_image, mask_image], axis=1)
-                tiled_image = labeled_image
+                tiled_image = np.concatenate([labeled_image, heatmap_image, mask_image], axis=1)
+                # tiled_image = labeled_image
                 # tiled_image = cv2.cvtColor(tiled_image, cv2.COLOR_RGB2BGR)  # TODO: keep?
                 image_utils.save(image_path, tiled_image)
 
@@ -666,7 +667,7 @@ class PelphixModule(pl.LightningModule):
         self.test_step_results.clear()
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), **self.optimizer)
+        optimizer = instantiate(self.optimizer, params=self.parameters())
         lr_scheduler_type = getattr(optim.lr_scheduler, self.scheduler["name"])
         lr_scheduler = lr_scheduler_type(optimizer, **self.scheduler["config"])
         return dict(optimizer=optimizer, lr_scheduler=lr_scheduler, monitor="val_accuracy/activity")

@@ -13,6 +13,8 @@ defaults:
   - _self_ # makes it so the subconfigs override the primary
   - experiment: train
   - scheduler: step
+  - backbone: unet
+  - optimizer: adam
 
   # Use the configured logging.
   - override hydra/job_logging: rich
@@ -197,10 +199,6 @@ transformer:
   num_layers: 6
   dropout: 0.5
 
-optimizer:
-  lr: 0.0001
-  weight_decay: 0.0001
-
 data_num_workers: 2
 dataloader:
   batch_size: ${batch_size}
@@ -239,9 +237,7 @@ unet_module:
   supercategory_num_classes: [8,3,8,2]
   num_seg_classes: 17
   num_keypoints: 16
-  unet:
-    num_layers: 5
-    features_start: 64
+  unet: ${backbone}
   transformer: ${transformer}
   optimizer: ${optimizer}
   scheduler: ${scheduler}
