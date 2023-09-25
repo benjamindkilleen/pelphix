@@ -130,7 +130,7 @@ def vis(cfg):
     """Visualize the training set."""
     dataset = PerphixSequenceDataset.from_configs(**cfg.sequences_train)
     images_dir = Path(get_original_cwd()) / "images"
-    for procedure_idx in [0]:
+    for procedure_idx in [1]:
         if procedure_idx >= dataset.num_procedures:
             break
         frames = dataset.visualize_procedure(procedure_idx, show_annotations=cfg.show)
@@ -150,14 +150,19 @@ def vis(cfg):
         #     writer.append_data(frame)
         # writer.close()
 
-        output_path = images_dir / f"procedure_{procedure_idx:03d}.gif"
-        log.info(f"Saving gif to {output_path}...")
-        iio.imwrite(
-            output_path,
-            frames,
-            duration=500,
-            loop=0,
-        )
+        for f, frame in enumerate(frames):
+            output_path = images_dir / f"frames_{procedure_idx:03d}" / f"{f:04d}.png"
+            output_path.parent.mkdir(exist_ok=True, parents=True)
+            imageio.imwrite(output_path, frame)
+
+        # output_path = images_dir / f"procedure_{procedure_idx:03d}.gif"
+        # log.info(f"Saving gif to {output_path}...")
+        # iio.imwrite(
+        #     output_path,
+        #     frames,
+        #     duration=500,
+        #     loop=0,
+        # )
 
 
 @pelphix.register_experiment
