@@ -15,8 +15,8 @@ Surgical Phase Recognition from X-ray Images in Percutaneous Pelvic Fixation
 <https://opensource.org/licenses/Apache-2.0>)
 [![arXiv](https://img.shields.io/badge/arXiv-2109.13900-b31b1b.svg)](
 <https://arxiv.org/abs/2109.13900>)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5555555.svg)](
-<https://doi.org/10.5281/zenodo.5555555>)
+<!-- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5555555.svg)](
+<https://doi.org/10.5281/zenodo.5555555>) -->
 
 <div align="left">
 
@@ -32,24 +32,22 @@ The simulated training and validation data can be downloaded here.
 
 | Download | Training Images | Val Images |  Download Size |
 | ------------ | -------- | ------------ | ------------- |
-| pelphix_000338 | 139,922 | 4,285 | 3.2 GB |
-| pelphix_000339 | 139,787 | 4,230 | 3.2 GB |
+| [pelphix_000338](https://livejohnshopkins-my.sharepoint.com/:u:/g/personal/bkillee1_jh_edu/EbOAHQ_SX-BEpt-zP-XGBGsBD716mYZhgnkJLjCzYDgfyA?e=OhlOg8) | 139,922 | 4,285 | 3.2 GB |
+| [pelphix_000339](https://livejohnshopkins-my.sharepoint.com/:u:/g/personal/bkillee1_jh_edu/ESI0HbovD_tIooVjVptNVksB00mOc52J0xPtaHwUDL4CVw?e=jY5GYV) | 139,787 | 4,230 | 3.2 GB |
 | **Total** | **279,709** | **8,515** | **6.4 GB** |
 
 Sequences from our cadaveric experiments are available from the following links:
 
 | Download | Images | Download Size |
 | ------------ | -------- | ------------- |
-| liverpool | 256 | 1.2 GB |
+| [liverpool](https://livejohnshopkins-my.sharepoint.com/:u:/g/personal/bkillee1_jh_edu/EX7IQ0f54C1CoOKmVoi0HJcBdJBwIYLTP7PrNrc5vKDEhg?e=lOBwET) | 256 | 1.2 GB |
 
 ## Installation
 
 Clone the repository:
 
 ```bash
-git clone git@github.com:benjamindkilleen/pelphix.git
-git submodule init
-git submodule update
+git clone --recursive git@github.com:benjamindkilleen/pelphix.git
 ```
 
 Install and activate the conda environment with
@@ -81,22 +79,6 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
 
 - `ckpt=/path/to/last.ckpt` to load a model checkpoint for resuming training or running inference.
 - `gpus=n` to use `n` GPUs.
-
-## Notes
-
-### Model Checkpoints
-
-- Dumbledore: full model
-- Sirius: full model, same as dumbledor, but with scheduler, and no class weighting. (keypoints, segs, etc.)
-- dobby: keypoints=False, segs=True
-- snape: keypoints=True, segs=False
-- hagrid: keypoints=False, segs=False
-
-### TODO
-
-- Ablation study on model architecture.
-- Visualization of sim-to-real transfer. (e.g. register real images, get GT annotations, show drop in overall performance)
-- Discussion of training/validation split.
 
 ## Citation
 
