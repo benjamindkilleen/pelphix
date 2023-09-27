@@ -154,5 +154,5 @@ images/keypoint_augmentations/
 images/liverpool_detections/
 images/unet_examples
 
-images/procedure_*.gif
+# images/procedure_*.gif
 images/frames_001
