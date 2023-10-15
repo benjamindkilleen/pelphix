@@ -61,7 +61,9 @@ class PelphixBase(PerphixBase, Process):
         image_size: tuple[int, int] = (256, 256),
         overwrite: bool = False,
         cache_dir: Optional[Union[str, Path]] = None,
+        bag_world: bool = False,
     ):
+        """Initialize the PelphixBase class."""
         super().__init__()
         self.root = Path(root).expanduser()
         self.nmdid_root = Path(nmdid_root).expanduser()
@@ -70,6 +72,7 @@ class PelphixBase(PerphixBase, Process):
         self.scan_name = scan_name
         self.image_size = tuple(image_size)
         self.overwrite = overwrite
+        self.bag_world = bag_world
 
         if cache_dir is None:
             self.cache_dir = self.root / "cache"
@@ -496,6 +499,18 @@ class PelphixBase(PerphixBase, Process):
 
         # Save the image
         image_utils.save(image_path, image)
+
+        # TODO: save everything else: poses for all the volumes, etc.
+        if self.bag_world:
+            bag = dict(
+                image_id=image_id,
+                volumes=[v.get_config() for v in projector.volumes],
+                index_from_world=device.index_from_world.get_config(),
+                source_to_detector_distance=device.source_to_detector_distance,
+                pixel_size=device.pixel_size,
+            )
+            bag_path = image_path.with_suffix(".json")
+            data_utils.save_json(bag_path, bag)
 
     @property
     def annotation_path(self) -> Path:

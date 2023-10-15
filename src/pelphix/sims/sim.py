@@ -16,7 +16,8 @@ from rich.progress import track
 from gpustat import print_gpustat
 from collections import Counter
 import deepdrr
-from deepdrr import geo, Volume
+from deepdrr import Volume
+import killeengeo as geo
 from deepdrr.device import SimpleDevice
 from deepdrr.utils import data_utils, image_utils
 from deepdrr import Projector
@@ -73,6 +74,7 @@ class PelphixSim(PelphixBase, Process):
         num_procedures: int = 10000,
         overwrite: bool = False,
         cache_dir: Optional[Path] = None,
+        bag_world: bool = False,
         skill_factor: tuple[float, float] = (0.5, 1.0),
         view_skill_factor: tuple[float, float] = (0.5, 1.0),
         view_tolerance: dict[str, float] = dict(),
@@ -139,6 +141,7 @@ class PelphixSim(PelphixBase, Process):
             image_size=image_size,
             overwrite=overwrite,
             cache_dir=cache_dir,
+            bag_world=bag_world,
         )
 
         self.train = train

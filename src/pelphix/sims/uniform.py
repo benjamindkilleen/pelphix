@@ -109,6 +109,7 @@ class PelphixUniform(PelphixBase):
         image_size: tuple[int, int] = (256, 256),
         overwrite: bool = False,
         cache_dir: Optional[Union[str, Path]] = None,
+        bag_world: bool = False,
         num_workers: int = 0,
         num_samples_per_case: int = 100,
         max_wires: int = 7,
@@ -154,6 +155,7 @@ class PelphixUniform(PelphixBase):
             image_size=image_size,
             overwrite=overwrite,
             cache_dir=cache_dir,
+            bag_world=bag_world,
         )
 
         self.job_queue = job_queue
