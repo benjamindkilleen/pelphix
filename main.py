@@ -91,8 +91,9 @@ def generate(cfg):
     sim_config = OmegaConf.to_container(cfg.sim)
 
     # Generate the images
-    pelphix_sim = PelphixSim(train=True, **sim_config)
-    pelphix_sim.generate()
+    if not cfg.eval_only:
+        pelphix_sim = PelphixSim(train=True, **sim_config)
+        pelphix_sim.generate()
 
     pelphix_val = PelphixSim(train=False, **sim_config)
     pelphix_val.generate()

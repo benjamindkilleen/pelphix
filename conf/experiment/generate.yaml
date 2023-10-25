@@ -2,3 +2,4 @@
 
 sim: ${sim}
 pelvis_annotations_dir: ${pelvis_annotations_dir}
+eval_only: ${eval_only}

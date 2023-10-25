@@ -29,10 +29,10 @@ task:
     teardrop_right: 1
     ramus_left: 1
     ramus_right: 1
-    s1_left: 0.25
-    s1_right: 0.25
-    s1: 0.5
-    s2: 0.5
+    s1_left: 0
+    s1_right: 0
+    s1: 0
+    s2: 1
   teardrop_left: ${_tasks}
   teardrop_right: ${_tasks}
   ramus_left: ${_tasks}

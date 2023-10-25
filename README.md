@@ -85,14 +85,18 @@ See [conf/config.yaml](/conf/config.yaml) for a full list of options. Common var
 If you found this work useful, please cite [our paper](https://arxiv.org/abs/2304.09285):
 
 ```bibtex
-@article{Pelphix2023,
- author = {Killeen, Benjamin D. and Zhang, Han and Mangulabnan, Jan and Armand, Mehran and Taylor, Russel H. and Osgood, Greg and Unberath, Mathias},
- title = {{Pelphix: Surgical Phase Recognition from X-ray Images in Percutaneous Pelvic Fixation}},
- journal = {arXiv},
+@incollection{Killeen2023Pelphix,
+ author = {Killeen, Benjamin D. and Zhang, Han and Mangulabnan, Jan and Armand, Mehran and Taylor, Russell H. and Osgood, Greg and Unberath, Mathias},
+ title = {{Pelphix: Surgical Phase Recognition from X-Ray Images in Percutaneous Pelvic Fixation}},
+ booktitle = {{Medical Image Computing and Computer Assisted Intervention {\textendash} MICCAI 2023}},
+ journal = {SpringerLink},
+ pages = {133--143},
  year = {2023},
- month = apr,
- eprint = {2304.09285},
- doi = {10.48550/arXiv.2304.09285}
+ month = oct,
+ isbn = {978-3-031-43996-4},
+ publisher = {Springer},
+ address = {Cham, Switzerland},
+ doi = {10.1007/978-3-031-43996-4_13}
 }
 ```
 

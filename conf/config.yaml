@@ -66,6 +66,7 @@ sim:
   overwrite: ${overwrite}
   cache_dir: ${hydra:runtime.cwd}/cache/pelphix
   num_workers: ${num_workers}
+  uniform_wire_movement: False
 
   skill_factor: [0.1, 0.3]
   view_skill_factor: [0.6, 0.8]

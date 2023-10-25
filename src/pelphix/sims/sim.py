@@ -82,6 +82,8 @@ class PelphixSim(PelphixBase, Process):
         random_angulation_bounds: dict[str, float] = dict(),
         num_workers: int = 1,
         max_procedure_length: int = 1000,
+        max_corridors: int = 10,
+        uniform_wire_movement: bool = False,
     ):
         """Create the pelvic workflows dataset from NMDID cadavers.
 
@@ -157,6 +159,8 @@ class PelphixSim(PelphixBase, Process):
         )
         self.num_workers = num_workers
         self.max_procedure_length = max_procedure_length
+        self.max_corridors = max_corridors
+        self.uniform_wire_movement = uniform_wire_movement
 
         log.debug(f"pelvis_annotations_dir: {self.pelvis_annotations_dir}")
 
@@ -516,9 +520,18 @@ class PelphixSim(PelphixBase, Process):
         #         cdist = dist
         #         break
 
-        if (
+        if self.uniform_wire_movement:
+            angle_bound = np.clip(
+                skill_factor * math.radians(5),
+                self.random_angulation_bounds["min"]["wire"][view_name],
+                self.random_angulation_bounds["max"]["wire"][view_name],
+            )
+            if np.random.uniform() < 0.2:
+                angle_bound = math.radians(10)
+            direction = geo.random.spherical_uniform(corridor.get_direction(), angle_bound)
+        elif (
             corridor_to_principle_ray_angle := abs(corridor.centerline.angle(principle_ray))
-        ) < THIRTY_DEGREES:
+        ) < THIRTY_DEGREES or self.uniform_wire_movement:
             # If the corridor is close to the principle ray, then adjust by bringing closer to
             # desired trajectory in 3D.
             angle_bound = np.clip(
@@ -802,7 +815,7 @@ class PelphixSim(PelphixBase, Process):
 
         # Sample the procedure.
         # log.warning(f"TODO: remove this hard-coded procedure length.")
-        max_corridors = len(corridors)
+        max_corridors = min(len(corridors), self.max_corridors)
         # max_corridors = np.random.randint(min(len(corridors), 4), len(corridors) + 1)
         log.info(f"Sampling {max_corridors} corridors.")
 
@@ -921,6 +934,7 @@ class PelphixSim(PelphixBase, Process):
             elif (
                 state.activity == Activity.insert_wire
                 and state.get_previous_activity() == Activity.position_wire
+                and state.get_previous_frame() == Frame.assessment
                 and wire_placed[corridor_name]
             ):
                 # This is the first insert_wire image, so the wire hasn't been advanced yet.
