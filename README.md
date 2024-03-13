@@ -15,7 +15,7 @@ Surgical Phase Recognition from X-ray Images in Percutaneous Pelvic Fixation
 <https://opensource.org/licenses/Apache-2.0>)
 [![arXiv](https://img.shields.io/badge/arXiv-2109.13900-b31b1b.svg)](
 <https://arxiv.org/abs/2304.09285>)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5555555.svg)](
+[![DOI](https://zenodo.org/badge/DOI/10.1007/978-3-031-43996-4_13)](
 <https://doi.org/10.1007/978-3-031-43996-4_13>)
 
 <div align="left">
