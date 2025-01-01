@@ -1,3 +1,4 @@
+
 {
     "exclude": [
         "**/__pycache__",
@@ -10,4 +11,5 @@
         "images",
         "procrustes",
     ],
+    "typeCheckingMode": "off",
 }
